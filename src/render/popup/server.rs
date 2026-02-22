@@ -57,6 +57,7 @@ pub fn draw(frame: &mut Frame, app: &mut AppState, area: Rect) {
     };
     let pkgs: Vec<&str> = match selected_label.as_str() {
         "Cockpit" => vec!["cockpit", "packagekit", "udisk2"],
+        "Cloud" => vec!["cloud-init-parch"],
         "Docker" => vec!["docker"],
         "Lighttpd" => vec!["lighttpd"],
         "Mariadb" => vec!["mariadb"],

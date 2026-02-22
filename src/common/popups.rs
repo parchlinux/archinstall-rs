@@ -305,6 +305,7 @@ impl AppState {
         self.popup_open = true;
         self.popup_items = vec![
             "Cockpit".into(),
+            "Cloud".into(),
             "Docker".into(),
             "Lighttpd".into(),
             "Mariadb".into(),

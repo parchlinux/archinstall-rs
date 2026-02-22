@@ -128,6 +128,8 @@ impl SystemService {
             "man-db",
             "man-pages",
             "xdg-user-dirs",
+            "parch-branding",
+            "parch-pacman",
         ] {
             package_set.insert(p.into());
         }
