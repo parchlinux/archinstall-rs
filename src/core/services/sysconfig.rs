@@ -91,6 +91,16 @@ impl SysConfigService {
             cmds.push("systemctl --root=/mnt enable NetworkManager".into());
         }
 
+        // Enable sshd if sshd server type is selected
+        if state.selected_server_types.contains("sshd") {
+            cmds.push("systemctl --root=/mnt enable sshd".into());
+        }
+
+        // Enable cloud-init if Cloud server type is selected
+        if state.selected_server_types.contains("Cloud") {
+            cmds.push("systemctl --root=/mnt enable cloud-init".into());
+        }
+
         // Enable NTP if chosen (avoid timedatectl in chroot)
         if state.ats_enabled {
             cmds.push("systemctl --root=/mnt enable systemd-timesyncd".into());
@@ -102,8 +112,7 @@ impl SysConfigService {
                 let cmd = "echo \"root:<REDACTED>\" | chpasswd";
                 cmds.push(chroot_cmd(cmd));
             } else {
-                let pw_escaped = state.root_password.replace('"', "\\\"");
-                let cmd = format!("echo \"root:{pw_escaped}\" | chpasswd");
+                let cmd = format!("echo 'root:{}' | chpasswd", state.root_password);
                 cmds.push(chroot_cmd(&cmd));
             }
         }

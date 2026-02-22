@@ -673,6 +673,7 @@ pub(crate) fn handle_space(app: &mut AppState) -> bool {
             {
                 let defaults: Vec<&str> = match name.as_str() {
                     "Cockpit" => vec!["cockpit", "packagekit", "udisk2"],
+                    "Cloud" => vec!["cloud-init-parch", "cloud-guest-utils"],
                     "Docker" => vec!["docker"],
                     "Lighttpd" => vec!["lighttpd"],
                     "Mariadb" => vec!["mariadb"],

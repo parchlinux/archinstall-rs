@@ -30,6 +30,9 @@ pub(crate) fn handle_enter_bootloader(app: &mut AppState) {
         app.bootloader_index = app.bootloader_focus_index;
         app.update_unified_kernel_images_visibility();
     } else {
+        if !app.is_uefi() && app.bootloader_index == 0 {
+            app.bootloader_index = 1;
+        }
         super::common::advance(app);
     }
 }

@@ -80,15 +80,27 @@ impl BootloaderService {
             }
             // TODO(v0.3.0+): Implement EFISTUB boot entry creation and kernel cmdline.
             2 => {
-                cmds.push("echo 'TODO: EFISTUB configuration not yet implemented'".into());
+                if !state.is_uefi() {
+                    cmds.push("echo 'EFISTUB requires UEFI mode'".into());
+                } else {
+                    cmds.push(chroot_cmd(
+                        "rootuuid=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) && \
+                         kernel=$(ls -1 /boot/vmlinuz-* | head -1 | xargs basename) && \
+                         initrd=$(ls -1 /boot/initramfs-*img | head -1 | xargs basename) && \
+                         efibootmgr --create --disk $(lsblk -no pkname $(findmnt -n -o SOURCE /boot)) --part $(lsblk -no PARTNUM $(findmnt -n -o SOURCE /boot)) --label 'Linux EFISTUB' --loader \"\\\\$kernel\" --unicode \"initrd=\\\\initrd root=UUID=$rootuuid rw\"",
+                    ));
+                }
             }
-            // Limine bootloader (index 3): ensure package is present first
-            // Implemented: install package inside chroot, copy helper script into target, run it inside chroot,
-            // and write an example limine.conf into the target filesystem.
-            // Limine bootloader (index 3): ensure package is present first
-            // Placeholder for Limine (index 3)
+            // Limine bootloader (index 3)
             3 => {
-                cmds.push("echo 'TODO: Limine bootloader setup not yet implemented'".into());
+                if !state.is_uefi() {
+                    cmds.push(chroot_cmd("limine-install /dev/sda"));
+                } else {
+                    cmds.push(chroot_cmd("limine-install --efi"));
+                }
+                cmds.push(chroot_cmd(
+                    "bash -lc 'cat > /boot/limine.conf <<EOF\ntimeout: 5\n\n: Arch Linux\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\n\n: Arch Linux (fallback)\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux-fallback.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\nEOF'",
+                ));
             }
             _ => {}
         }

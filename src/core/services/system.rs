@@ -129,7 +129,8 @@ impl SystemService {
             "man-pages",
             "xdg-user-dirs",
             "parch-branding",
-            "parch-pacman",
+            "parch-pacman-next",
+            "archlinux-keyring",
         ] {
             package_set.insert(p.into());
         }
@@ -146,6 +147,9 @@ impl SystemService {
         match state.bootloader_index {
             1 => {
                 package_set.insert("grub".into());
+            }
+            2 => {
+                package_set.insert("efibootmgr".into());
             }
             3 => {
                 package_set.insert("limine".into());

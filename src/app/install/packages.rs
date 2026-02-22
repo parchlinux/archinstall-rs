@@ -126,6 +126,7 @@ pub fn env_default_packages(env: &str) -> Vec<&'static str> {
 pub fn server_default_packages(server: &str) -> Vec<&'static str> {
     match server {
         "Cockpit" => vec!["cockpit", "packagekit", "udisk2"],
+        "Cloud" => vec!["cloud-init-parch", "cloud-guest-utils"],
         "Docker" => vec!["docker"],
         "Lighttpd" => vec!["lighttpd"],
         "Mariadb" => vec!["mariadb"],

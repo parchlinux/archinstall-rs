@@ -45,10 +45,9 @@ impl UserSetupService {
                         user.username
                     )));
                 } else {
-                    let pw_escaped = user.password.replace('"', "\\\"");
                     cmds.push(chroot_cmd(&format!(
-                        "echo \"{0}:{1}\" | chpasswd",
-                        user.username, pw_escaped
+                        "echo '{0}:{1}' | chpasswd",
+                        user.username, user.password
                     )));
                 }
             }

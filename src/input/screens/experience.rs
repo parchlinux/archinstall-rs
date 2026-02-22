@@ -74,9 +74,17 @@ pub(crate) fn handle_enter_experience(app: &mut AppState) {
             }
         } else if app.experience_focus_index == 2 {
             app.experience_mode_index = 2;
+            app.selected_desktop_envs.clear();
+            app.selected_env_packages.clear();
+            app.selected_login_manager = None;
+            app.login_manager_user_set = false;
             app.open_server_type_popup();
         } else if app.experience_focus_index == 3 {
             app.experience_mode_index = 3;
+            app.selected_desktop_envs.clear();
+            app.selected_env_packages.clear();
+            app.selected_login_manager = None;
+            app.login_manager_user_set = false;
             // If graphics drivers were cleared (e.g., after Minimal), seed defaults for Xorg
             if app.selected_graphic_drivers.is_empty() {
                 for k in [
