@@ -199,7 +199,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut AppState, area: Rect) {
         if app.is_uefi() {
             info_lines.push(Line::from("- gpt: 1024MiB EFI (FAT, ESP) -> /boot"));
             if app.swap_enabled {
-                info_lines.push(Line::from("- swap: 4GiB"));
+                info_lines.push(Line::from(format!("- swap: {}GiB (based on RAM)", app.swap_size_gb)));
             }
             let enc = if app.disk_encryption_type_index == 1 {
                 " (LUKS)"
@@ -210,7 +210,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut AppState, area: Rect) {
         } else {
             info_lines.push(Line::from("- gpt: 1MiB bios_boot [bios_grub]"));
             if app.swap_enabled {
-                info_lines.push(Line::from("- swap: 4GiB"));
+                info_lines.push(Line::from(format!("- swap: {}GiB (based on RAM)", app.swap_size_gb)));
             }
             let enc = if app.disk_encryption_type_index == 1 {
                 " (LUKS)"

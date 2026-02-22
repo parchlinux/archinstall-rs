@@ -1,8 +1,8 @@
-use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use ratatui::Frame;
 
 use crate::app::AppState;
 
@@ -14,20 +14,23 @@ pub(super) fn render(frame: &mut Frame, app: &mut AppState, area: Rect) {
             .add_modifier(Modifier::BOLD),
     ))];
 
+    let detected_ram = AppState::detect_swap_size_gb();
     let swap = if app.swap_enabled {
         "Enabled"
     } else {
         "Disabled"
     };
-    info_lines.push(Line::from(format!("Swapon: {swap}")));
+    info_lines.push(Line::from(format!("Detected RAM: {} GiB", detected_ram)));
+    info_lines.push(Line::from(format!(
+        "Recommended Swap: {} GiB",
+        app.swap_size_gb
+    )));
+    info_lines.push(Line::from(format!("Swapon: {}", swap)));
     info_lines.push(Line::from(
-        "Swapon can be used to activate the swap partition.",
+        "Swap size is calculated based on your system RAM for optimal performance.",
     ));
     info_lines.push(Line::from(
-        "If disabled here, the system will be configured with swapoff.",
-    ));
-    info_lines.push(Line::from(
-        "You can always run 'swapon' later to activate the swap partition.",
+        "Formula: ≤8GB RAM = equal swap, >8GB RAM = 8GB + half of additional RAM (max 16GB).",
     ));
 
     let mut desc_lines = vec![Line::from(Span::styled(
@@ -40,7 +43,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut AppState, area: Rect) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+        .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
         .split(area);
 
     let description = Paragraph::new(desc_lines)

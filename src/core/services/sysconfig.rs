@@ -37,6 +37,10 @@ impl SysConfigService {
         )));
         cmds.push(chroot_cmd("hwclock --systohc"));
 
+        // Initialize pacman keys
+        cmds.push(chroot_cmd("pacman-key --init"));
+        cmds.push(chroot_cmd("pacman-key --populate"));
+
         // Locale configuration
         let language = state
             .locale_language_options
@@ -75,7 +79,7 @@ impl SysConfigService {
 
         // Hostname and hosts
         let hostname = if state.hostname_value.is_empty() {
-            "archlinux".to_string()
+            "parchlinux".to_string()
         } else {
             state.hostname_value.clone()
         };

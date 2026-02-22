@@ -49,10 +49,10 @@ impl BootloaderService {
 
                 // Build arch.conf and fallback with inline UUID discovery
                 cmds.push(chroot_cmd(
-                    "rootdev=$(findmnt -n -o SOURCE /); rootuuid=$(blkid -s UUID -o value \"$rootdev\" || true); cat > /boot/loader/entries/arch.conf <<EOF\ntitle   Arch Linux\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux.img\noptions root=UUID=$rootuuid rw\nEOF",
+                    "rootdev=$(findmnt -n -o SOURCE /); rootuuid=$(blkid -s UUID -o value \"$rootdev\" || true); cat > /boot/loader/entries/arch.conf <<EOF\ntitle   Parch Linux\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux.img\noptions root=UUID=$rootuuid rw\nEOF",
                 ));
                 cmds.push(chroot_cmd(
-                    "rootdev=$(findmnt -n -o SOURCE /); rootuuid=$(blkid -s UUID -o value \"$rootdev\" || true); cat > /boot/loader/entries/arch-fallback.conf <<EOF\ntitle   Arch Linux (fallback initramfs)\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux-fallback.img\noptions root=UUID=$rootuuid rw\nEOF",
+                    "rootdev=$(findmnt -n -o SOURCE /); rootuuid=$(blkid -s UUID -o value \"$rootdev\" || true); cat > /boot/loader/entries/arch-fallback.conf <<EOF\ntitle   Parch Linux (fallback initramfs)\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux-fallback.img\noptions root=UUID=$rootuuid rw\nEOF",
                 ));
 
                 // Verify entries
@@ -99,7 +99,7 @@ impl BootloaderService {
                     cmds.push(chroot_cmd("limine-install --efi"));
                 }
                 cmds.push(chroot_cmd(
-                    "bash -lc 'cat > /boot/limine.conf <<EOF\ntimeout: 5\n\n: Arch Linux\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\n\n: Arch Linux (fallback)\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux-fallback.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\nEOF'",
+                    "bash -lc 'cat > /boot/limine.conf <<EOF\ntimeout: 5\n\n: Parch Linux\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\n\n: Parch Linux (fallback)\n    kernel: /vmlinuz-linux\n    initrd: /initramfs-linux-fallback.img\n    cmdline: root=UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /)) rw\nEOF'",
                 ));
             }
             _ => {}

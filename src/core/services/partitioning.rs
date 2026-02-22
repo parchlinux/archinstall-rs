@@ -99,10 +99,11 @@ impl PartitioningService {
         }
 
         if state.swap_enabled {
+            let swap_mib = state.swap_size_gb * 1024;
             let swap_end = if state.is_uefi() {
-                "5121MiB"
+                format!("{}MiB", 512 + swap_mib)
             } else {
-                "4098MiB"
+                format!("{}MiB", 2 + swap_mib)
             };
             part_cmds.push(format!(
                 "parted -s {device} mkpart swap linux-swap {next_start} {swap_end}"

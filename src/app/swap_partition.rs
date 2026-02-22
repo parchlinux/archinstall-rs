@@ -21,6 +21,18 @@ pub fn draw_swap_partition(frame: &mut ratatui::Frame, app: &mut AppState, area:
 
     let mut lines: Vec<Line> = vec![Line::from(title), Line::from("")];
 
+    lines.push(Line::from(Span::styled(
+        "Recommended swap size based on detected RAM:",
+        Style::default().fg(Color::Cyan),
+    )));
+    lines.push(Line::from(""));
+    lines.push(Line::from(format!(
+        "  RAM: {} GiB → Swap: {} GiB",
+        AppState::detect_swap_size_gb(),
+        app.swap_size_gb
+    )));
+    lines.push(Line::from(""));
+
     let options = vec![(
         "Swapon",
         if app.swap_enabled {
