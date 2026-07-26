@@ -3,9 +3,11 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use unicode_width::UnicodeWidthStr;
 
 use crate::app::{AppState, PopupKind};
 
+mod config_load;
 mod desktop;
 mod general;
 mod info;
@@ -19,9 +21,18 @@ pub fn draw_popup(frame: &mut Frame, app: &mut AppState) {
     let t = crate::render::theme::catppuccin_mocha();
     let area = frame.area();
     let (width, height) = if matches!(app.popup_kind, Some(PopupKind::Info)) {
-        // Make Info popups (e.g., "Reboot now?") a bit larger
-        let w = area.width.clamp(36, 72);
-        let h = area.height.clamp(11, 16);
+        let body = app.popup_items.first().map(|s| s.as_str()).unwrap_or("");
+        let line_count = body.lines().count().max(1);
+        let longest_display = body.lines().map(|l| l.width()).max().unwrap_or(20);
+        // +4 for border + padding on each side; +2 horizontal margin inside block
+        let w_raw = longest_display.saturating_add(6);
+        let w = u16::try_from(w_raw)
+            .unwrap_or(u16::MAX)
+            .clamp(40, area.width.saturating_sub(4).max(40));
+        let h_raw = line_count.saturating_add(6);
+        let h = u16::try_from(h_raw)
+            .unwrap_or(u16::MAX)
+            .clamp(10, area.height.saturating_sub(2).max(10));
         (w, h)
     } else if matches!(
         app.popup_kind,
@@ -42,9 +53,24 @@ pub fn draw_popup(frame: &mut Frame, app: &mut AppState) {
             | Some(PopupKind::NetworkGateway)
             | Some(PopupKind::NetworkDNS)
             | Some(PopupKind::AurHelperSelect)
+            | Some(PopupKind::BtrfsSubvolumePreset)
     ) {
         let w = area.width.clamp(28, 56);
         let h = area.height.clamp(9, 12);
+        (w, h)
+    } else if matches!(app.popup_kind, Some(PopupKind::ConfigLoadSelect)) {
+        let w = area
+            .width
+            .saturating_mul(9)
+            .saturating_div(10)
+            .max(72)
+            .min(area.width);
+        let h = area
+            .height
+            .saturating_mul(4)
+            .saturating_div(5)
+            .max(16)
+            .min(area.height);
         (w, h)
     } else {
         (
@@ -114,6 +140,8 @@ pub fn draw_popup(frame: &mut Frame, app: &mut AppState) {
         Some(PopupKind::UserEditUsername) => " Edit username ",
         Some(PopupKind::TimezoneSelect) => " Select Timezone ",
         Some(PopupKind::AurHelperSelect) => " Choose AUR helper ",
+        Some(PopupKind::BtrfsSubvolumePreset) => " Btrfs Subvolume Layout ",
+        Some(PopupKind::ConfigLoadSelect) => " Load Configuration (Enter to select) ",
         None => " Select ",
     };
 
@@ -178,15 +206,14 @@ pub fn draw_popup(frame: &mut Frame, app: &mut AppState) {
             | Some(PopupKind::ManualPartitionMountpoint)
             | Some(PopupKind::ManualPartitionEdit)
             | Some(PopupKind::AurHelperSelect)
+            | Some(PopupKind::BtrfsSubvolumePreset)
     );
     if !hide_search {
         let search_label = if app.popup_in_search { "/" } else { "" };
         let search = Paragraph::new(Line::from(vec![
             ratatui::text::Span::styled(
                 search_label,
-                Style::default()
-                    .fg(t.accent)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(t.accent).add_modifier(Modifier::BOLD),
             ),
             ratatui::text::Span::raw(app.popup_search_query.clone()),
         ]))
@@ -205,6 +232,7 @@ pub fn draw_popup(frame: &mut Frame, app: &mut AppState) {
         Some(PopupKind::DesktopEnvSelect) => desktop::draw(frame, app, inner[1]),
         Some(PopupKind::ServerTypeSelect) => server::draw(frame, app, inner[1]),
         Some(PopupKind::XorgTypeSelect) => xorg::draw(frame, app, inner[1]),
+        Some(PopupKind::ConfigLoadSelect) => config_load::draw(frame, app, inner[1]),
         _ => general::draw(frame, app, inner[1]),
     }
 }

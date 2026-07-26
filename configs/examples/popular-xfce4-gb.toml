@@ -1,0 +1,85 @@
+# Xfce4 + British English — Xfce is often the third-largest full desktop in pkgstats (popular
+# lightweight choice). Set the root password in the TUI before install.
+
+additional_packages = []
+
+[locales]
+keyboard_layout = "gb"
+locale_language = "en_GB.UTF-8"
+locale_encoding = "UTF-8"
+
+[mirrors]
+regions = ["United Kingdom         GB    33"]
+optional_repos = ["multilib", "AUR"]
+aur_helper = "yay"
+custom_servers = []
+custom_repos = []
+
+[disks]
+mode = "Best-effort partition layout"
+
+[disk_encryption]
+encryption_type = "None"
+
+[swap]
+enabled = true
+
+[bootloader]
+kind = "grub"
+
+[system]
+hostname = "archlinux"
+automatic_time_sync = true
+timezone = "Europe/London"
+
+[unified_kernel_images]
+enabled = false
+
+[kernels]
+selected = ["linux", "linux-lts"]
+
+[audio]
+kind = "pipewire"
+
+[experience]
+mode = "Desktop"
+desktop_envs = ["Xfce4"]
+server_types = []
+xorg_types = []
+login_manager = "lightdm-gtk-greeter"
+login_manager_user_set = false
+graphic_drivers = [
+    "intel-media-driver",
+    "libva-intel-driver",
+    "mesa",
+    "vulkan-intel",
+    "vulkan-nouveau",
+    "vulkan-radeon",
+    "xf86-video-amdgpu",
+    "xf86-video-ati",
+    "xf86-video-nouveau",
+    "xorg-server",
+    "xorg-xinit",
+]
+
+[experience.desktop_env_packages]
+"Xfce4" = [
+    "gvfs",
+    "pavucontrol",
+    "xarchiver",
+    "xfce4",
+    "xfce4-goodies",
+    "htop",
+    "iwd",
+    "nano",
+    "openssh",
+    "smartmontools",
+    "vim",
+    "wget",
+    "wireless_tools",
+    "wpa_supplicant",
+    "xdg-utils",
+]
+
+[network]
+mode = "NetworkManager"

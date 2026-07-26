@@ -92,6 +92,8 @@ pub enum PopupKind {
     AdditionalPackageGroupPackages,
     // New: AUR helper selection
     AurHelperSelect,
+    BtrfsSubvolumePreset,
+    ConfigLoadSelect,
 }
 
 #[derive(Clone)]

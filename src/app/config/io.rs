@@ -105,6 +105,14 @@ impl AppState {
                     encrypt: p.encrypt,
                 })
                 .collect(),
+            btrfs_subvolume_preset: Some(
+                match self.btrfs_subvolume_preset {
+                    1 => "standard",
+                    2 => "extended",
+                    _ => "flat",
+                }
+                .into(),
+            ),
         };
         let encryption_type = match self.disk_encryption_type_index {
             0 => "None",
@@ -350,13 +358,16 @@ impl AppState {
     }
 
     pub fn load_config(&mut self) -> Result<(), ConfigLoadError> {
+        self.load_config_from_path(&Self::config_path())
+    }
+
+    pub fn load_config_from_path(&mut self, path: &std::path::Path) -> Result<(), ConfigLoadError> {
         // Ensure option lists are available before mapping names back to indices
         let _ = self.load_locales_options();
         let _ = self.load_mirrors_options();
 
-        let path = Self::config_path();
         self.debug_log(&format!("load_config: path={}", path.display()));
-        let text = std::fs::read_to_string(&path).map_err(|e| {
+        let text = std::fs::read_to_string(path).map_err(|e| {
             self.debug_log(&format!("load_config: read error: {e}"));
             ConfigLoadError::ReadFile
         })?;
@@ -376,7 +387,8 @@ impl AppState {
                 .position(|s| s == &cfg.locales.keyboard_layout)
             {
                 self.keyboard_layout_index = idx;
-                self.last_load_missing_sections.retain(|s| s != "Locales: keyboard_layout");
+                self.last_load_missing_sections
+                    .retain(|s| s != "Locales: keyboard_layout");
                 // Apply to live environment immediately
                 if let Some(layout) = self
                     .keyboard_layout_options
@@ -397,7 +409,8 @@ impl AppState {
                 .position(|s| s == &cfg.locales.locale_language)
             {
                 self.locale_language_index = idx;
-                self.last_load_missing_sections.retain(|s| s != "Locales: locale_language");
+                self.last_load_missing_sections
+                    .retain(|s| s != "Locales: locale_language");
             }
         } else {
             self.last_load_missing_sections
@@ -410,7 +423,8 @@ impl AppState {
                 .position(|s| s == &cfg.locales.locale_encoding)
             {
                 self.locale_encoding_index = idx;
-                self.last_load_missing_sections.retain(|s| s != "Locales: locale_encoding");
+                self.last_load_missing_sections
+                    .retain(|s| s != "Locales: locale_encoding");
             }
         } else {
             self.last_load_missing_sections
@@ -429,7 +443,8 @@ impl AppState {
             }
         }
         if !self.mirrors_regions_selected.is_empty() {
-            self.last_load_missing_sections.retain(|s| s != "Mirrors: regions");
+            self.last_load_missing_sections
+                .retain(|s| s != "Mirrors: regions");
         }
         self.optional_repos_selected.clear();
         if cfg.mirrors.optional_repos.is_empty() {
@@ -442,7 +457,8 @@ impl AppState {
             }
         }
         if !self.optional_repos_selected.is_empty() {
-            self.last_load_missing_sections.retain(|s| s != "Mirrors: optional_repos");
+            self.last_load_missing_sections
+                .retain(|s| s != "Mirrors: optional_repos");
         }
         // Load aur_helper
         if let Some(helper) = cfg.mirrors.aur_helper.clone() {
@@ -484,7 +500,8 @@ impl AppState {
                 .push("Mirrors: custom_repos".into());
         }
         if !self.custom_repos.is_empty() {
-            self.last_load_missing_sections.retain(|s| s != "Mirrors: custom_repos");
+            self.last_load_missing_sections
+                .retain(|s| s != "Mirrors: custom_repos");
         }
 
         // Disks
@@ -498,6 +515,7 @@ impl AppState {
             "Manual Partitioning" => 1,
             _ => 2,
         };
+        self.pre_mounted_cache_instant = None;
         self.disks_selected_device = loaded_selected_device.and_then(|p| {
             if self.disks_devices.iter().any(|d| d.path == p) {
                 Some(p)
@@ -537,6 +555,11 @@ impl AppState {
         if let Some(a) = cfg.disks.align.clone() {
             self.disks_align = Some(a);
         }
+        self.btrfs_subvolume_preset = match cfg.disks.btrfs_subvolume_preset.as_deref() {
+            Some("standard") => 1,
+            Some("extended") => 2,
+            _ => 0,
+        };
         self.disks_partitions = cfg
             .disks
             .partitions
@@ -608,14 +631,10 @@ impl AppState {
                 .retain(|s| s != "System: hostname");
         }
         self.hostname_value = cfg.system.hostname;
-        self.root_password_hash = cfg.system.root_password_hash; // keep as hash only
-        if self.root_password_hash.is_none() {
-            self.last_load_missing_sections
-                .push("System: root_password_hash".into());
-        } else {
-            self.last_load_missing_sections
-                .retain(|s| s != "System: root_password_hash");
-        }
+        // Hash is optional in presets: install still requires plaintext root password in the TUI.
+        self.root_password_hash = cfg.system.root_password_hash;
+        self.last_load_missing_sections
+            .retain(|s| s != "System: root_password_hash");
         self.ats_enabled = cfg.system.automatic_time_sync;
         if cfg.system.timezone.is_empty() {
             self.last_load_missing_sections
@@ -628,6 +647,8 @@ impl AppState {
 
         // Unified Kernel Images
         self.uki_enabled = cfg.unified_kernel_images.enabled;
+        self.update_unified_kernel_images_visibility();
+        self.apply_secure_boot_uki_policy();
 
         // Kernels
         self.selected_kernels = cfg.kernels.selected.into_iter().collect();

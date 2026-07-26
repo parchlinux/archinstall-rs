@@ -1,30 +1,24 @@
-users = []
+# KDE Plasma + US English — aligns with pkgstats (Plasma is the most common full desktop
+# among reporting Arch installs) and typical “recommended Arch desktop” threads.
+# Set the root password in the TUI before install (presets omit password hashes).
+
 additional_packages = []
 
 [locales]
-keyboard_layout = "de_CH-latin1"
-locale_language = "de_CH.UTF-8"
+keyboard_layout = "us"
+locale_language = "en_US.UTF-8"
 locale_encoding = "UTF-8"
 
 [mirrors]
-regions = ["Switzerland            CH    26"]
-optional_repos = ["multilib"]
+# Exact line from `reflector --list-countries` (mirror counts change over time; re-copy if load misses).
+regions = ["United States          US   189"]
+optional_repos = ["multilib", "AUR"]
+aur_helper = "yay"
 custom_servers = []
 custom_repos = []
 
 [disks]
 mode = "Best-effort partition layout"
-selected_device = "/dev/sdb"
-selected_device_model = "ST2000DM006-2DM164"
-selected_device_devtype = "disk"
-selected_device_size = "1.8 TiB"
-selected_device_freespace = "1.8 TiB"
-selected_device_sector_size = "512/4096 B"
-selected_device_read_only = false
-label = "gpt"
-wipe = true
-align = "1MiB"
-partitions = []
 
 [disk_encryption]
 encryption_type = "None"
@@ -36,16 +30,15 @@ enabled = true
 kind = "grub"
 
 [system]
-hostname = "Archlinux"
-root_password_hash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+hostname = "archlinux"
 automatic_time_sync = true
-timezone = "Europe/Zurich"
+timezone = "America/New_York"
 
 [unified_kernel_images]
 enabled = false
 
 [kernels]
-selected = ["linux"]
+selected = ["linux", "linux-lts"]
 
 [audio]
 kind = "pipewire"
@@ -75,14 +68,14 @@ graphic_drivers = [
 "KDE Plasma" = [
     "ark",
     "dolphin",
-    "htop",
-    "iwd",
     "kate",
     "konsole",
-    "nano",
-    "openssh",
     "plasma-meta",
     "plasma-workspace",
+    "htop",
+    "iwd",
+    "nano",
+    "openssh",
     "smartmontools",
     "vim",
     "wget",
@@ -90,10 +83,6 @@ graphic_drivers = [
     "wpa_supplicant",
     "xdg-utils",
 ]
-
-[experience.server_packages]
-
-[experience.xorg_packages]
 
 [network]
 mode = "NetworkManager"

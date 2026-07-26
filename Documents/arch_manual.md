@@ -8,6 +8,12 @@ localectl list-keymaps
 # Set keyboard layout to Swiss German
 loadkeys de_CH-latin1
 
+# increase memory size to 4gb
+mount -o remount,size=4G /run/archiso/cowspace
+
+# Verify new size
+df -h /run/archiso/cowspace
+
 # Verify system time
 timedatectl
 

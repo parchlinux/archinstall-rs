@@ -5,8 +5,6 @@ pub mod input;
 pub mod render;
 pub mod runner;
 
-use std::io::Write;
-
 fn debug_log(enabled: bool, msg: &str) {
     if !enabled {
         return;
@@ -26,11 +24,6 @@ fn debug_log(enabled: bool, msg: &str) {
 fn print_info(debug_enabled: bool, msg: &str) {
     println!("{msg}");
     debug_log(debug_enabled, &format!("info: {msg}"));
-}
-
-fn print_error(debug_enabled: bool, msg: &str) {
-    eprintln!("{msg}");
-    debug_log(debug_enabled, &format!("error: {msg}"));
 }
 
 fn main() -> std::io::Result<()> {
@@ -53,46 +46,12 @@ fn main() -> std::io::Result<()> {
     if had_warnings {
         print_info(
             debug_enabled,
-            "\nOne or more preflight warnings were detected.",
+            "\nOne or more preflight warnings were detected. Continuing.",
         );
-        debug_log(debug_enabled, "preflight: warnings detected");
-        // In dry-run, don't block with a prompt; just continue for TUI testing
-        let will_prompt = !(dry_run && cfg!(windows));
         debug_log(
             debug_enabled,
-            &format!(
-                "preflight: prompt gating will_prompt={} (dry_run && windows = {})",
-                will_prompt,
-                dry_run && cfg!(windows)
-            ),
+            "preflight: warnings detected; continuing without prompt",
         );
-        if will_prompt {
-            print!("Proceed anyway? [y/N]: ");
-            let _ = std::io::stdout().flush();
-            debug_log(
-                debug_enabled,
-                "preflight: prompting user for proceed anyway",
-            );
-
-            let mut answer = String::new();
-            if let Err(err) = std::io::stdin().read_line(&mut answer) {
-                print_error(debug_enabled, &format!("Failed to read input: {err}"));
-                debug_log(debug_enabled, &format!("preflight: read_line error: {err}"));
-                return Ok(());
-            }
-
-            let answer_trimmed = answer.trim().to_lowercase();
-            let proceed = answer_trimmed == "y" || answer_trimmed == "yes";
-            debug_log(
-                debug_enabled,
-                &format!("preflight: user decision proceed={proceed}"),
-            );
-            if !proceed {
-                print_info(debug_enabled, "Aborted by user due to preflight warnings.");
-                debug_log(debug_enabled, "preflight: aborted by user");
-                return Ok(());
-            }
-        }
     }
     // TODO(v0.5.0): Parse config path and unattended flags to run non-interactively.
     runner::run_with_debug(dry_run, debug_enabled)
@@ -142,9 +101,12 @@ fn run_preflight_checks(dry_run: bool, debug_enabled: bool) -> bool {
         }
     }
 
-    // Check internet connectivity (use platform-appropriate ping)
-    let archlinux_ok = check_host_connectivity("archlinux.org", debug_enabled);
-    let google_ok = check_host_connectivity("google.com", debug_enabled);
+    // Check internet connectivity in parallel via TCP connect (fast, no subprocess overhead)
+    let (archlinux_ok, google_ok) = std::thread::scope(|s| {
+        let h1 = s.spawn(|| check_host_connectivity("archlinux.org", debug_enabled));
+        let h2 = s.spawn(|| check_host_connectivity("google.com", debug_enabled));
+        (h1.join().unwrap_or(false), h2.join().unwrap_or(false))
+    });
     debug_log(
         debug_enabled,
         &format!(
@@ -153,6 +115,53 @@ fn run_preflight_checks(dry_run: bool, debug_enabled: bool) -> bool {
     );
     if !(archlinux_ok || google_ok) {
         had_warning = true;
+    }
+
+    // Check for kernel/module version mismatch (common on older Arch ISOs)
+    if !dry_run {
+        let kver = std::fs::read_to_string("/proc/version")
+            .ok()
+            .and_then(|v| v.split_whitespace().nth(2).map(String::from));
+        if let Some(ref kver) = kver {
+            let mod_dir = format!("/lib/modules/{kver}");
+            debug_log(
+                debug_enabled,
+                &format!("preflight: checking module dir {mod_dir}"),
+            );
+            if !std::path::Path::new(&mod_dir).is_dir() {
+                // List what module dirs DO exist
+                let available: Vec<String> = std::fs::read_dir("/lib/modules")
+                    .ok()
+                    .map(|rd| {
+                        rd.filter_map(|e| e.ok())
+                            .filter_map(|e| e.file_name().into_string().ok())
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                print_info(
+                    debug_enabled,
+                    &format!(
+                        "Warning: Kernel/module version mismatch -- running kernel {kver} but modules on disk: {}",
+                        if available.is_empty() {
+                            "none".into()
+                        } else {
+                            available.join(", ")
+                        }
+                    ),
+                );
+                print_info(
+                    debug_enabled,
+                    "FAT/vfat modules may not load. Consider downloading a current Arch ISO.",
+                );
+                debug_log(
+                    debug_enabled,
+                    &format!(
+                        "preflight: kernel/module mismatch kver={kver} available={available:?}"
+                    ),
+                );
+                had_warning = true;
+            }
+        }
     }
 
     // Check terminal color capabilities and advise for best experience
@@ -185,47 +194,45 @@ fn run_preflight_checks(dry_run: bool, debug_enabled: bool) -> bool {
 }
 
 fn check_host_connectivity(host: &str, debug_enabled: bool) -> bool {
-    // Use platform-appropriate ping flags
-    #[cfg(windows)]
-    let args: [&str; 4] = ["-n", "1", "-w", "2000"]; // -n count, -w timeout(ms)
-    #[cfg(not(windows))]
-    let args: [&str; 4] = ["-c", "1", "-W", "2"]; // -c count, -W timeout(s)
+    use std::net::{TcpStream, ToSocketAddrs};
+    use std::time::Duration;
 
     debug_log(
         debug_enabled,
-        &format!("preflight: ping '{}' with args {:?}", host, &args),
+        &format!("preflight: TCP connect check for '{host}:443'"),
     );
 
-    let status = std::process::Command::new("ping")
-        .args(args)
-        .arg(host)
-        .status();
+    let timeout = Duration::from_secs(2);
 
-    match status {
-        Ok(s) if s.success() => {
-            debug_log(debug_enabled, &format!("preflight: '{host}' reachable"));
-            true
-        }
-        Ok(s) => {
-            let code = s.code().unwrap_or(-1);
+    match (host, 443u16).to_socket_addrs() {
+        Ok(addrs) => {
+            for addr in addrs {
+                if TcpStream::connect_timeout(&addr, timeout).is_ok() {
+                    debug_log(
+                        debug_enabled,
+                        &format!("preflight: '{host}' reachable via TCP"),
+                    );
+                    return true;
+                }
+            }
             print_info(
                 debug_enabled,
                 &format!("Network check failed: cannot reach {host}"),
             );
             debug_log(
                 debug_enabled,
-                &format!("preflight: '{host}' unreachable, exit_code={code}"),
+                &format!("preflight: '{host}' unreachable via TCP"),
             );
             false
         }
         Err(err) => {
-            print_error(
+            print_info(
                 debug_enabled,
-                &format!("Network check error for {host}: {err}"),
+                &format!("Network check failed: cannot resolve {host}"),
             );
             debug_log(
                 debug_enabled,
-                &format!("preflight: ping error for '{host}': {err}"),
+                &format!("preflight: DNS resolution failed for '{host}': {err}"),
             );
             false
         }

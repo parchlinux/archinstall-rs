@@ -3,6 +3,7 @@ use ratatui::widgets::ListState;
 use std::collections::BTreeSet;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
+use crate::common::InstallLogMsg;
 use crate::core::types::{
     AdditionalPackage, CustomRepo, DiskPartitionSpec, Focus, InstallClickTarget, MenuEntry,
     NetworkInterfaceConfig, PopupKind, Screen, UserAccount,
@@ -75,6 +76,12 @@ pub struct AppState {
     pub disks_wipe: bool,
     pub disks_align: Option<String>,
     pub disks_partitions: Vec<DiskPartitionSpec>,
+    pub btrfs_subvolume_preset: usize, // 0=Flat, 1=Standard, 2=Extended
+    /// Cached output of findmnt/swapon for pre-mounted mode (avoid subprocesses every render).
+    pub pre_mounted_cache_mount_lines: Vec<String>,
+    pub pre_mounted_cache_findmnt_failed: bool,
+    pub pre_mounted_cache_swap_devices: Vec<String>,
+    pub pre_mounted_cache_instant: Option<std::time::Instant>,
 
     // Manual Partitioning: create partition popup state
     pub manual_create_units_index: usize, // 0: B, 1: KiB/KB, 2: MiB/MB, 3: GiB/GB
@@ -129,6 +136,16 @@ pub struct AppState {
     // Bootloader state
     pub bootloader_focus_index: usize, // 0: selector, 1: Continue
     pub bootloader_index: usize,       // 0: systemd-boot, 1: grub, 2: efistub, 3: limine
+    /// When `Some`, install code treats the host as UEFI or BIOS without probing `/sys/firmware/efi` (tests).
+    pub firmware_uefi_override: Option<bool>,
+    /// Secure Boot status detected at startup (or forced in tests via override).
+    pub secure_boot_enabled: bool,
+    /// True when Secure Boot status was detected confidently.
+    pub secure_boot_known: bool,
+    /// True when the firmware is in UEFI Setup Mode (no keys enrolled).
+    pub secure_boot_setup_mode: bool,
+    /// Optional test override for Secure Boot state.
+    pub secure_boot_override: Option<bool>,
 
     // Kernels state
     pub kernels_focus_index: usize, // 0: select, 1: Continue
@@ -213,15 +230,16 @@ pub struct AppState {
 
     // Configuration screen state
     pub config_focus_index: usize, // 0: Save, 1: Load, 2: Continue
+    pub config_preset_rows: Vec<crate::app::config::presets::ConfigPresetTableRow>,
+    pub config_popup_rows: Vec<crate::app::config::presets::ConfigPresetTableRow>,
 
     // Load feedback
     pub last_load_missing_sections: Vec<String>,
 
     // Additional Packages state
-    pub addpkgs_focus_index: usize, // 0: Add package input, 1: Continue
+    pub addpkgs_focus_index: usize, // 0: Add package, 1: Select groups, 2: Continue
     pub additional_packages: Vec<AdditionalPackage>,
-    pub addpkgs_selected_index: usize,
-    pub addpkgs_selected: std::collections::BTreeSet<usize>,
+    pub addpkgs_selected_index: usize, // highlighted row in the package list (↑/↓, j/k)
     pub addpkgs_reopen_after_info: bool,
     // Additional Packages: groups
     pub addpkgs_group_focus: bool, // focus within groups vs main
@@ -243,8 +261,8 @@ pub struct AppState {
     // Live install logging state
     pub install_running: bool,
     pub install_log: Vec<String>,
-    pub install_log_tx: Option<Sender<String>>,
-    pub install_log_rx: Option<Receiver<String>>,
+    pub install_log_tx: Option<Sender<InstallLogMsg>>,
+    pub install_log_rx: Option<Receiver<InstallLogMsg>>,
     // Install progress (for in-TUI progress view)
     pub install_section_titles: Vec<String>,
     pub install_section_done: Vec<bool>,
@@ -252,7 +270,8 @@ pub struct AppState {
 
     // Request to exit TUI and run install in stdout mode
     pub exit_tui_after_install: bool,
-    pub pending_install_sections: Option<Vec<(String, Vec<String>)>>,
+    pub pending_install_sections:
+        Option<Vec<(String, Vec<crate::common::install_cmd::InstallCmd>)>>,
 
     // Clickable targets in Install decision menu (computed each render)
     pub install_click_targets: Vec<(ratatui::layout::Rect, InstallClickTarget)>,
@@ -433,6 +452,11 @@ impl AppState {
             disks_wipe: true,
             disks_align: Some("1MiB".into()),
             disks_partitions: Vec::new(),
+            btrfs_subvolume_preset: 0, // Flat (no subvolumes) by default
+            pre_mounted_cache_mount_lines: Vec::new(),
+            pre_mounted_cache_findmnt_failed: false,
+            pre_mounted_cache_swap_devices: Vec::new(),
+            pre_mounted_cache_instant: None,
 
             manual_create_units_index: 0,
             manual_create_free_start_bytes: 0,
@@ -483,6 +507,11 @@ impl AppState {
 
             bootloader_focus_index: 0,
             bootloader_index: 0,
+            firmware_uefi_override: None,
+            secure_boot_enabled: false,
+            secure_boot_known: false,
+            secure_boot_setup_mode: false,
+            secure_boot_override: None,
 
             kernels_focus_index: 0,
             selected_kernels: {
@@ -570,13 +599,14 @@ impl AppState {
             useredit_reopen_after_info: false,
 
             config_focus_index: 0,
+            config_preset_rows: Vec::new(),
+            config_popup_rows: Vec::new(),
 
             last_load_missing_sections: Vec::new(),
 
             addpkgs_focus_index: 0,
             additional_packages: Vec::new(),
             addpkgs_selected_index: 0,
-            addpkgs_selected: std::collections::BTreeSet::new(),
             addpkgs_reopen_after_info: false,
             addpkgs_group_focus: false,
             addpkgs_group_names: vec![
@@ -681,6 +711,10 @@ impl AppState {
                 defaults.into_iter().map(|s| s.to_string()).collect();
             s.selected_env_packages.insert("KDE Plasma".into(), set);
         }
+
+        // Discover bundled/repo example config presets
+        s.config_preset_rows = crate::app::config::presets::list_example_preset_rows();
+
         s
     }
 
@@ -688,42 +722,61 @@ impl AppState {
         self.menu_entries[self.selected_index].screen
     }
 
-    pub fn append_install_log_line(&mut self, line: String) {
-        // Interpret simple progress markers and update state
-        if let Some(rest) = line.strip_prefix("::section_start::") {
-            if let Some(idx) = self.install_section_titles.iter().position(|t| t == rest) {
-                self.install_current_section = Some(idx);
-                self.debug_log(&format!(
-                    "append_install_log_line: section_start '{rest}' idx={idx}"
-                ));
-            }
-            return;
-        }
-        if let Some(rest) = line.strip_prefix("::section_done::") {
-            if let Some(idx) = self.install_section_titles.iter().position(|t| t == rest)
-                && idx < self.install_section_done.len()
-            {
-                self.install_section_done[idx] = true;
-                self.debug_log(&format!(
-                    "append_install_log_line: section_done '{rest}' idx={idx}"
-                ));
-            }
-            return;
-        }
-
-        self.install_log.push(line);
-        // keep log reasonably small
-        // No log line limit: allow install_log to grow as needed
-        // Update info popup body if it's open as Info
+    fn refresh_install_info_popup_body(&mut self) {
         let info_open = self.popup_open && matches!(self.popup_kind, Some(PopupKind::Info));
-        if info_open {
-            let body = self.install_log.join("\n");
-            if self.popup_items.is_empty() {
-                self.popup_items.push(body);
-            } else {
-                self.popup_items[0] = body;
+        if !info_open {
+            return;
+        }
+        let body = self.install_log.join("\n");
+        if self.popup_items.is_empty() {
+            self.popup_items.push(body);
+        } else {
+            self.popup_items[0] = body;
+        }
+    }
+
+    /// Apply one message from the install thread (line append or in-place progress update).
+    pub fn append_install_log_msg(&mut self, msg: InstallLogMsg) {
+        match msg {
+            InstallLogMsg::Line(line) => {
+                // Interpret simple progress markers and update state
+                if let Some(rest) = line.strip_prefix("::section_start::") {
+                    if let Some(idx) = self.install_section_titles.iter().position(|t| t == rest) {
+                        self.install_current_section = Some(idx);
+                        self.debug_log(&format!(
+                            "append_install_log_msg: section_start '{rest}' idx={idx}"
+                        ));
+                    }
+                    return;
+                }
+                if let Some(rest) = line.strip_prefix("::section_done::") {
+                    if let Some(idx) = self.install_section_titles.iter().position(|t| t == rest)
+                        && idx < self.install_section_done.len()
+                    {
+                        self.install_section_done[idx] = true;
+                        self.debug_log(&format!(
+                            "append_install_log_msg: section_done '{rest}' idx={idx}"
+                        ));
+                    }
+                    return;
+                }
+
+                self.install_log.push(line);
+                // No log line limit: allow install_log to grow as needed
+                self.refresh_install_info_popup_body();
             }
-            // Do not spam per-line here; drain_install_logs will log summary of updates
+            InstallLogMsg::ReplaceLastLine(line) => {
+                if line.is_empty() {
+                    return;
+                }
+                if self.install_log.is_empty() {
+                    self.install_log.push(line);
+                } else {
+                    let n = self.install_log.len().saturating_sub(1);
+                    self.install_log[n] = line;
+                }
+                self.refresh_install_info_popup_body();
+            }
         }
     }
 
@@ -734,11 +787,11 @@ impl AppState {
             }
             return;
         };
-        let mut drained: Vec<String> = Vec::new();
+        let mut drained: Vec<InstallLogMsg> = Vec::new();
         let mut disconnected = false;
         loop {
             match rx.try_recv() {
-                Ok(line) => drained.push(line),
+                Ok(msg) => drained.push(msg),
                 Err(TryRecvError::Empty) => break,
                 Err(TryRecvError::Disconnected) => {
                     disconnected = true;
@@ -748,8 +801,8 @@ impl AppState {
             }
         }
         let drained_count = drained.len();
-        for line in drained {
-            self.append_install_log_line(line);
+        for msg in drained {
+            self.append_install_log_msg(msg);
         }
         // Update last_install_log_len for visual indicator
         self.last_install_log_len = Some(self.install_log.len());

@@ -8,10 +8,9 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 
 use crate::app::AppState;
-use crate::common::utils::redact_command_for_logging;
 use crate::input::handle_event;
 use crate::render::draw;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 fn debug_log(enabled: bool, msg: &str) {
     if !enabled {
@@ -132,6 +131,8 @@ fn run_loop_with_debug(
     );
     let mut app = AppState::new(dry_run);
     app.debug_enabled = debug_enabled;
+    app.detect_secure_boot_state();
+    app.apply_secure_boot_uki_policy();
     debug_log(
         debug_enabled,
         "run_loop_with_debug: entering run_loop_inner",
@@ -221,6 +222,7 @@ fn run_loop_inner(
             }
         }
 
+        app.maybe_refresh_pre_mounted_probe_cache();
         terminal.draw(|frame| draw(frame, app))?;
 
         let elapsed = last_tick.elapsed();
@@ -374,11 +376,31 @@ fn run_loop_inner(
                     ),
                 );
                 println!("=== {title} ===");
-                for c in cmds {
-                    let red = redact_command_for_logging(&c);
+                for cmd in cmds {
+                    let red = cmd.for_log();
                     println!("$ {red}");
                     debug_log(app.debug_enabled, &format!("stdout-mode: run '{red}'"));
-                    let status = Command::new("bash").arg("-lc").arg(&c).status();
+                    let mut child = match cmd.spawn_script_pipeline(Stdio::inherit()) {
+                        Ok(ch) => ch,
+                        Err(e) => {
+                            let msg = format!("Failed to run: {red} ({e})");
+                            any_error = Some(msg.clone());
+                            eprintln!("{}", any_error.as_ref().unwrap());
+                            debug_log(
+                                app.debug_enabled,
+                                &format!("stdout-mode: command spawn error: {e}"),
+                            );
+                            break 'outer;
+                        }
+                    };
+                    if let Err(e) = cmd.write_passphrase_to_stdin(&mut child) {
+                        let msg = format!("Failed to pass LUKS passphrase: {red} ({e})");
+                        any_error = Some(msg.clone());
+                        eprintln!("{}", any_error.as_ref().unwrap());
+                        debug_log(app.debug_enabled, &format!("stdout-mode: stdin error: {e}"));
+                        break 'outer;
+                    }
+                    let status = child.wait();
                     match status {
                         Ok(st) if st.success() => {
                             debug_log(app.debug_enabled, "stdout-mode: command OK");
