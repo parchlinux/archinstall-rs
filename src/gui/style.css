@@ -1,30 +1,33 @@
-/* macOS Sequoia / Sonoma Inspired Dark Theme */
+/* Genuine macOS Recovery "Install macOS" Dialog Style */
 
 window.installer-window {
-    background-color: #0d0f14;
-    color: #e6edf3;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Cantarell, sans-serif;
+    background-color: #1e1e1e;
+    color: #e5e5e7;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Wallpaper Scrim Overlay */
+/* Background wallpaper with subtle blur effect */
 .wallpaper-overlay {
-    background: radial-gradient(circle at 50% 30%, rgba(18, 22, 31, 0.75) 0%, rgba(10, 12, 18, 0.96) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(20, 20, 25, 0.72) 0%, rgba(10, 10, 14, 0.94) 100%);
 }
 
-/* Centered macOS Window Container */
+/* Authentic Centered macOS Window */
 .installer-card {
-    background-color: rgba(28, 33, 44, 0.94);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 20px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.2);
+    background: #252528;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.3);
+    min-width: 680px;
+    max-width: 680px;
+    min-height: 540px;
     overflow: hidden;
 }
 
-/* macOS Titlebar with Traffic Light Dots */
+/* Minimal macOS Titlebar */
 .mac-titlebar {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 12px 18px;
+    background: transparent;
+    padding: 16px 20px 0px 20px;
 }
 
 .traffic-light {
@@ -34,209 +37,188 @@ window.installer-window {
 }
 
 .traffic-close {
-    background-color: #ff5f57;
-    border: 1px solid #e0443e;
+    background-color: #ff5f56;
+    border: 0.5px solid #e0443e;
 }
 
 .traffic-minimize {
-    background-color: #febc2e;
-    border: 1px solid #d89e24;
+    background-color: #ffbd2e;
+    border: 0.5px solid #dea123;
 }
 
 .traffic-zoom {
-    background-color: #28c840;
-    border: 1px solid #1aab29;
+    background-color: #27c93f;
+    border: 0.5px solid #1aab29;
 }
 
-.mac-titlebar-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #98a2b3;
-    letter-spacing: -0.2px;
-}
-
-/* Mock / Dry-Run Badge in Titlebar */
-.mock-badge {
-    background-color: rgba(254, 188, 46, 0.16);
-    color: #febc2e;
+/* Mock Mode Badge */
+.mock-pill {
+    background-color: rgba(255, 189, 46, 0.12);
+    color: #ffbd2e;
+    border: 1px solid rgba(255, 189, 46, 0.3);
+    border-radius: 20px;
+    padding: 3px 10px;
     font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(254, 188, 46, 0.35);
-    letter-spacing: 0.4px;
-}
-
-/* macOS Sidebar */
-.mac-sidebar {
-    background-color: rgba(20, 24, 33, 0.95);
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
-    padding: 24px 16px;
-}
-
-.sidebar-logo {
-    margin-bottom: 16px;
-}
-
-.sidebar-brand-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffffff;
-    letter-spacing: -0.3px;
-}
-
-.sidebar-brand-sub {
-    font-size: 11px;
-    font-weight: 500;
-    color: #7d8590;
-    margin-bottom: 24px;
-}
-
-.sidebar-step-item {
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #8b949e;
-    transition: all 150ms ease;
-}
-
-.sidebar-step-active {
-    background-color: rgba(163, 0, 178, 0.22);
-    color: #ffffff;
     font-weight: 600;
-    border-left: 3px solid #b000cc;
-}
-
-.sidebar-step-done {
-    color: #38ef7d;
+    letter-spacing: -0.1px;
 }
 
 /* Main Content Area */
-.mac-content-view {
-    padding: 32px 40px;
+.mac-body {
+    padding: 20px 52px 30px 52px;
 }
 
-.content-hero-title {
+.hero-icon {
+    margin-bottom: 12px;
+}
+
+.mac-hero-title {
     font-size: 24px;
     font-weight: 700;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.4px;
     color: #ffffff;
-    margin-bottom: 4px;
-}
-
-.content-hero-subtitle {
-    font-size: 14px;
-    color: #8b949e;
-    margin-bottom: 20px;
-}
-
-/* Glass Grouped Rows / Settings Cards */
-.mac-group {
-    background-color: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 18px 20px;
-    margin-bottom: 18px;
-}
-
-.mac-field-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #c9d1d9;
-    margin-bottom: 4px;
-}
-
-.mac-field-desc {
-    font-size: 12px;
-    color: #7d8590;
     margin-bottom: 8px;
 }
 
-/* macOS Native-Style Buttons */
-button.mac-btn-primary {
-    background: linear-gradient(180deg, #8500b2 0%, #68008c 100%);
-    border: 1px solid #9e00d4;
-    border-radius: 8px;
-    color: #ffffff;
-    font-weight: 600;
+.mac-hero-desc {
     font-size: 13px;
-    padding: 8px 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    line-height: 1.5;
+    color: #98989d;
+    margin-bottom: 24px;
 }
 
-button.mac-btn-primary:hover {
-    background: linear-gradient(180deg, #9900cc 0%, #75009e 100%);
-}
-
-button.mac-btn-primary:active {
-    background: #5c007a;
-}
-
-button.mac-btn-secondary {
-    background-color: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    color: #e6edf3;
-    font-weight: 500;
-    font-size: 13px;
-    padding: 8px 20px;
-}
-
-button.mac-btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-
-button.mac-btn-danger {
-    background: linear-gradient(180deg, #b000cc 0%, #8500b2 100%);
-    border: 1px solid #c700e6;
-    border-radius: 8px;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 13px;
-    padding: 9px 26px;
-    box-shadow: 0 2px 10px rgba(176, 0, 204, 0.4);
-}
-
-button.mac-btn-danger:hover {
-    background: linear-gradient(180deg, #c700e6 0%, #9900cc 100%);
-}
-
-/* Entry Fields */
-entry.mac-entry {
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 7px;
-    color: #ffffff;
-    padding: 8px 12px;
-    font-size: 13px;
-}
-
-entry.mac-entry:focus {
-    border-color: #b000cc;
-    box-shadow: 0 0 0 3px rgba(176, 0, 204, 0.25);
-}
-
-/* macOS Progress bar */
-progressbar.mac-progress trough {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    min-height: 8px;
-}
-
-progressbar.mac-progress progress {
-    background: linear-gradient(90deg, #8500b2 0%, #38ef7d 100%);
-    border-radius: 8px;
-    min-height: 8px;
-}
-
-/* Console terminal */
-.log-console {
-    background-color: #05070a;
+/* Disk Selection Cards */
+.disk-selector-scroll {
+    background-color: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 11.5px;
-    color: #4cd964;
-    padding: 12px;
+    padding: 8px;
+    margin-bottom: 14px;
+}
+
+.mac-disk-item {
+    background-color: transparent;
+    border: 1.5px solid transparent;
+    border-radius: 10px;
+    padding: 14px 18px;
+    transition: all 120ms ease;
+}
+
+.mac-disk-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.mac-disk-item-selected {
+    background-color: rgba(0, 122, 255, 0.18);
+    border-color: #007aff;
+}
+
+.disk-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.disk-sub {
+    font-size: 12px;
+    color: #8e8e93;
+}
+
+/* macOS Dialog Input Group */
+.mac-dialog-card {
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+}
+
+.mac-input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c7c7cc;
+    margin-bottom: 3px;
+}
+
+entry.mac-input {
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    color: #ffffff;
+    padding: 7px 10px;
+    font-size: 13px;
+}
+
+entry.mac-input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.35);
+}
+
+/* macOS Progress Bar */
+progressbar.mac-installer-progress trough {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    min-height: 6px;
+}
+
+progressbar.mac-installer-progress progress {
+    background-color: #007aff;
+    border-radius: 4px;
+    min-height: 6px;
+}
+
+.mac-progress-status {
+    font-size: 12px;
+    color: #98989d;
+    margin-top: 10px;
+}
+
+/* macOS Console / Terminal */
+.mac-log-view {
+    background-color: #141416;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    font-family: "SF Mono", Menlo, Monaco, monospace;
+    font-size: 11px;
+    color: #63e2b7;
+    padding: 10px;
+}
+
+/* macOS Footer Action Buttons */
+.mac-footer {
+    padding-top: 12px;
+}
+
+button.mac-btn-default {
+    background: linear-gradient(180deg, #007aff 0%, #0062cc 100%);
+    border: 1px solid #0056b3;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 20px;
+    min-width: 96px;
+}
+
+button.mac-btn-default:hover {
+    background: linear-gradient(180deg, #1a88ff 0%, #006de0 100%);
+}
+
+button.mac-btn-default:active {
+    background: #0056b3;
+}
+
+button.mac-btn-cancel {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    color: #f2f2f7;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 18px;
+    min-width: 86px;
+}
+
+button.mac-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
