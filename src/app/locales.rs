@@ -1,11 +1,6 @@
 use std::process::Command;
 
 use super::{AppState, PopupKind, Screen};
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Line;
-use ratatui::text::Span;
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
 #[derive(Debug)]
 pub enum LocalesLoadError {
@@ -75,7 +70,7 @@ impl AppState {
     }
 
     pub fn open_locales_popup(&mut self) {
-        if self.current_screen() != Screen::Locales || self.focus != super::Focus::Content {
+        if self.current_screen() != Screen::Locales || self.focus != crate::core::types::Focus::Content {
             return;
         }
         let (kind, opts, current_idx) = match self.locales_focus_index {
@@ -238,83 +233,3 @@ impl AppState {
     }
 }
 
-pub fn draw_locales(frame: &mut ratatui::Frame, app: &mut AppState, area: Rect) {
-    let title = Span::styled(
-        "Locales",
-        Style::default()
-            .fg(Color::Green)
-            .add_modifier(Modifier::BOLD),
-    );
-
-    let options = vec![
-        (
-            "Keyboard layout",
-            app.current_keyboard_layout(),
-            app.locales_focus_index == 0,
-        ),
-        (
-            "Locale language",
-            app.current_locale_language(),
-            app.locales_focus_index == 1,
-        ),
-        (
-            "Locale encoding",
-            app.current_locale_encoding(),
-            app.locales_focus_index == 2,
-        ),
-    ];
-
-    let mut lines: Vec<Line> = vec![Line::from(title), Line::from("")];
-    for (label, value, is_focused_line) in options {
-        let is_active_line = is_focused_line && matches!(app.focus, super::Focus::Content);
-        let bullet = if is_focused_line { "▶" } else { " " };
-        let bullet_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let label_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let value_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let line = Line::from(vec![
-            Span::styled(format!("{bullet} "), bullet_style),
-            Span::styled(format!("{label}: "), label_style),
-            Span::styled(value, value_style),
-        ]);
-        lines.push(line);
-    }
-
-    // Continue button
-    let continue_style =
-        if app.locales_focus_index == 3 && matches!(app.focus, super::Focus::Content) {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-    lines.push(Line::from(""));
-    lines.push(Line::from(Span::styled("[ Continue ]", continue_style)));
-
-    let title = match app.focus {
-        super::Focus::Content => " Desicion Menu (focused) ",
-        _ => " Desicion Menu ",
-    };
-    let content = Paragraph::new(lines)
-        .block(Block::default().borders(Borders::ALL).title(title))
-        .wrap(Wrap { trim: false });
-    frame.render_widget(content, area);
-}

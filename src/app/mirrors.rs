@@ -1,10 +1,6 @@
 use std::process::Command;
 
 use super::{AppState, CustomRepo, PopupKind, RepoSignOption, RepoSignature, Screen};
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
 #[derive(Debug)]
 pub enum MirrorsLoadError {
@@ -54,7 +50,7 @@ impl AppState {
     }
 
     pub fn open_mirrors_regions_popup(&mut self) {
-        if self.current_screen() != Screen::MirrorsRepos || self.focus != super::Focus::Content {
+        if self.current_screen() != Screen::MirrorsRepos || self.focus != crate::core::types::Focus::Content {
             return;
         }
         let _ = self.load_mirrors_options();
@@ -68,7 +64,7 @@ impl AppState {
     }
 
     pub fn open_optional_repos_popup(&mut self) {
-        if self.current_screen() != Screen::MirrorsRepos || self.focus != super::Focus::Content {
+        if self.current_screen() != Screen::MirrorsRepos || self.focus != crate::core::types::Focus::Content {
             return;
         }
         self.popup_kind = Some(PopupKind::OptionalRepos);
@@ -81,7 +77,7 @@ impl AppState {
     }
 
     pub fn open_mirrors_custom_server_input(&mut self) {
-        if self.current_screen() != Screen::MirrorsRepos || self.focus != super::Focus::Content {
+        if self.current_screen() != Screen::MirrorsRepos || self.focus != crate::core::types::Focus::Content {
             return;
         }
         self.popup_kind = Some(PopupKind::MirrorsCustomServerInput);
@@ -90,7 +86,7 @@ impl AppState {
     }
 
     pub fn open_mirrors_custom_repo_flow(&mut self) {
-        if self.current_screen() != Screen::MirrorsRepos || self.focus != super::Focus::Content {
+        if self.current_screen() != Screen::MirrorsRepos || self.focus != crate::core::types::Focus::Content {
             return;
         }
         self.draft_repo_name.clear();
@@ -152,86 +148,3 @@ impl AppState {
     }
 }
 
-pub fn draw_mirrors_repos(frame: &mut ratatui::Frame, app: &mut AppState, area: Rect) {
-    let title = Span::styled(
-        "Mirrors and Repositories",
-        Style::default()
-            .fg(Color::Green)
-            .add_modifier(Modifier::BOLD),
-    );
-
-    let options = vec![
-        ("Select Regions", app.mirrors_focus_index == 0),
-        ("Add custom servers", app.mirrors_focus_index == 1),
-        ("Optional repositories", app.mirrors_focus_index == 2),
-        ("Add custom repository", app.mirrors_focus_index == 3),
-    ];
-
-    let mut lines: Vec<Line> = vec![Line::from(title), Line::from("")];
-    for (label, is_focused_line) in options {
-        let is_active_line = is_focused_line && matches!(app.focus, super::Focus::Content);
-        let bullet = if is_focused_line { "▶" } else { " " };
-        let bullet_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let label_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let mut text = label.to_string();
-        if label == "Optional repositories" {
-            let mut selected: Vec<String> = app
-                .optional_repos_selected
-                .iter()
-                .filter_map(|&i| app.optional_repos_options.get(i).cloned())
-                .collect();
-            selected.sort();
-            if !selected.is_empty() {
-                text.push_str(&format!("  ({})", selected.join(", ")));
-            }
-            if app.aur_selected {
-                let helper = match app.aur_helper_index {
-                    Some(0) => "yay",
-                    Some(1) => "paru",
-                    _ => "choose helper",
-                };
-                text.push_str(&format!(" — AUR: {helper}"));
-            }
-        }
-        let line = Line::from(vec![
-            Span::styled(format!("{bullet} "), bullet_style),
-            Span::styled(text, label_style),
-        ]);
-        lines.push(line);
-    }
-
-    let continue_style =
-        if app.mirrors_focus_index == 4 && matches!(app.focus, super::Focus::Content) {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-    lines.push(Line::from(""));
-    lines.push(Line::from(Span::styled("[ Continue ]", continue_style)));
-
-    let content = Paragraph::new(lines)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(match app.focus {
-                    super::Focus::Content => " Desicion Menu (focused) ",
-                    _ => " Desicion Menu ",
-                }),
-        )
-        .wrap(Wrap { trim: false });
-    frame.render_widget(content, area);
-}

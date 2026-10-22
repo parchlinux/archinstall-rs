@@ -4,11 +4,6 @@ use std::time::{Duration, Instant};
 
 use super::AppState;
 use crate::core::types::Screen;
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Line;
-use ratatui::text::Span;
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
 #[derive(Clone)]
 pub struct DiskDevice {
@@ -21,105 +16,6 @@ pub struct DiskDevice {
     pub read_only: bool,
 }
 
-pub fn draw_disks(frame: &mut ratatui::Frame, app: &mut AppState, area: Rect) {
-    let title = Span::styled(
-        "Disk Partitioning",
-        Style::default()
-            .fg(Color::Green)
-            .add_modifier(Modifier::BOLD),
-    );
-
-    let options = vec![
-        ("Best-effort partition layout", 0),
-        ("Manual Partitioning", 1),
-        ("Pre-mounted configuration", 2),
-    ];
-
-    let mut lines: Vec<Line> = vec![Line::from(title), Line::from("")];
-    // NOTE: Manual partitioning validation handled by StoragePlanner (Phase 3).
-    // Pre-mounted flow is Phase 5.
-    for (label, idx) in options {
-        let is_focused_line = app.disks_focus_index == idx;
-        let is_active_line = is_focused_line && matches!(app.focus, super::Focus::Content);
-        let bullet = if is_focused_line { "▶" } else { " " };
-        let bullet_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let label_style = if is_active_line {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        let line = Line::from(vec![
-            Span::styled(format!("{bullet} "), bullet_style),
-            Span::styled(label.to_string(), label_style),
-        ]);
-        lines.push(line);
-    }
-
-    // Btrfs subvolume preset row: interactive in automatic mode (0), or in manual mode (1) when
-    // root is btrfs (subvolume layout only applies to btrfs root).
-    let preset_label = match app.btrfs_subvolume_preset {
-        1 => "Standard (@, @home, @snapshots)",
-        2 => "Extended (@, @home, @var_log, @snapshots)",
-        _ => "Flat (no subvolumes)",
-    };
-    let is_preset_focused = app.disks_focus_index == 3;
-    let is_preset_active = is_preset_focused && matches!(app.focus, super::Focus::Content);
-    let has_btrfs_root = app.disks_partitions.iter().any(|p| {
-        p.role
-            .as_deref()
-            .map(|r| r.eq_ignore_ascii_case("ROOT"))
-            .unwrap_or(false)
-            && p.fs.as_deref() == Some("btrfs")
-    });
-    let preset_available =
-        app.disks_mode_index == 0 || (app.disks_mode_index == 1 && has_btrfs_root);
-    let preset_bullet = if is_preset_focused { "▶" } else { " " };
-    let preset_style = if is_preset_active && preset_available {
-        Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD)
-    } else if !preset_available {
-        Style::default().fg(Color::DarkGray)
-    } else {
-        Style::default().fg(Color::White)
-    };
-    lines.push(Line::from(""));
-    lines.push(Line::from(vec![
-        Span::styled(format!("{preset_bullet} "), preset_style),
-        Span::styled(format!("Btrfs Subvolumes: {preset_label}"), preset_style),
-    ]));
-
-    let continue_style = if app.disks_focus_index == 4 && matches!(app.focus, super::Focus::Content)
-    {
-        Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD)
-    } else {
-        Style::default().fg(Color::White)
-    };
-    lines.push(Line::from(""));
-    lines.push(Line::from(Span::styled("[ Continue ]", continue_style)));
-
-    let content = Paragraph::new(lines)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(match app.focus {
-                    super::Focus::Content => " Desicion Menu (focused) ",
-                    _ => " Desicion Menu ",
-                }),
-        )
-        .wrap(Wrap { trim: false });
-    frame.render_widget(content, area);
-}
 
 impl AppState {
     pub(crate) fn human_bytes(n: u64) -> String {

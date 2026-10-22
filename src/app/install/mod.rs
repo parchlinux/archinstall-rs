@@ -1,5 +1,2 @@
-mod flow;
-mod packages;
-mod ui;
-
-pub use ui::draw_install;
+pub mod flow;
+pub mod packages;

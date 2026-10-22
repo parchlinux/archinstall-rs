@@ -1,11 +1,9 @@
-use ratatui::layout::Rect;
-use ratatui::widgets::ListState;
 use std::collections::BTreeSet;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 use crate::common::InstallLogMsg;
 use crate::core::types::{
-    AdditionalPackage, CustomRepo, DiskPartitionSpec, Focus, InstallClickTarget, MenuEntry,
+    AdditionalPackage, CustomRepo, DiskPartitionSpec, Focus, MenuEntry,
     NetworkInterfaceConfig, PopupKind, Screen, UserAccount,
 };
 
@@ -24,11 +22,7 @@ pub struct AppState {
     pub selected_index: usize,
     pub info_message: String,
     pub focus: Focus,
-    pub last_menu_rect: Rect,
-    pub last_infobox_rect: Rect,
-    pub last_content_rect: Rect,
-    pub list_state: ListState,
-
+                
     // Locales screen state
     pub locales_focus_index: usize, // 0: keyboard, 1: language, 2: encoding
     pub keyboard_layout_options: Vec<String>,
@@ -275,8 +269,7 @@ pub struct AppState {
         Option<Vec<(String, Vec<crate::common::install_cmd::InstallCmd>)>>,
 
     // Clickable targets in Install decision menu (computed each render)
-    pub install_click_targets: Vec<(ratatui::layout::Rect, InstallClickTarget)>,
-    // Keyboard selection within Install decision menu (index into install_click_targets)
+        // Keyboard selection within Install decision menu (index into install_click_targets)
     pub install_focus_index: usize,
 
     // Ephemeral toast overlay (bottom-right)
@@ -394,9 +387,7 @@ impl AppState {
             },
         ];
 
-        let mut list_state = ListState::default();
-        list_state.select(Some(0));
-
+        
         let detected_ram = crate::common::utils::detect_ram_mib();
         let swap_size = crate::common::utils::compute_swap_size_mib(detected_ram);
 
@@ -411,11 +402,7 @@ impl AppState {
             selected_index: 0,
             info_message: String::new(),
             focus: Focus::Menu,
-            last_menu_rect: Rect::default(),
-            last_infobox_rect: Rect::default(),
-            last_content_rect: Rect::default(),
-            list_state,
-
+                                                
             locales_focus_index: 0,
             keyboard_layout_options: Vec::new(),
             keyboard_layout_index: 0,
@@ -641,8 +628,7 @@ impl AppState {
 
             exit_tui_after_install: false,
             pending_install_sections: None,
-            install_click_targets: Vec::new(),
-            install_focus_index: 0,
+                        install_focus_index: 0,
 
             toast_message: None,
             toast_deadline: None,
@@ -859,7 +845,7 @@ impl AppState {
                 self.selected_index, idx, self.menu_entries[idx].screen
             ));
             self.selected_index = idx;
-            self.list_state.select(Some(idx));
+            
         }
     }
 
