@@ -49,7 +49,7 @@ fn create_logo_widget(size: i32) -> Picture {
     if let Ok(pixbuf) = Pixbuf::from_stream_at_scale(&stream, size, size, true, None::<&gtk4::gio::Cancellable>) {
         let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
         let pic = Picture::for_paintable(&texture);
-        pic.set_can_shrink(true);
+        pic.set_can_shrink(false);
         pic.set_size_request(size, size);
         pic.add_css_class("hero-icon");
         pic
@@ -63,7 +63,7 @@ fn create_disk_icon(size: i32) -> Picture {
     if let Ok(pixbuf) = Pixbuf::from_stream_at_scale(&stream, size, size, true, None::<&gtk4::gio::Cancellable>) {
         let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
         let pic = Picture::for_paintable(&texture);
-        pic.set_can_shrink(true);
+        pic.set_can_shrink(false);
         pic.set_size_request(size, size);
         pic
     } else {
@@ -117,28 +117,14 @@ fn build_ui(app: &Application) {
     center_box.set_valign(gtk4::Align::Center);
     center_box.set_halign(gtk4::Align::Center);
 
-    // Authentic macOS "Install macOS" Dialog Box
+    // Fixed-size macOS Dialog Box (640px x 520px)
     let card = GtkBox::new(Orientation::Vertical, 0);
     card.add_css_class("installer-card");
+    card.set_size_request(640, 520);
 
-    // Titlebar: Traffic lights + Mock Mode indicator
+    // Clean Minimal Titlebar with Mock Mode indicator
     let titlebar = GtkBox::new(Orientation::Horizontal, 12);
     titlebar.add_css_class("mac-titlebar");
-
-    let traffic_lights = GtkBox::new(Orientation::Horizontal, 8);
-    let dot_close = GtkBox::new(Orientation::Horizontal, 0);
-    dot_close.add_css_class("traffic-light");
-    dot_close.add_css_class("traffic-close");
-    let dot_min = GtkBox::new(Orientation::Horizontal, 0);
-    dot_min.add_css_class("traffic-light");
-    dot_min.add_css_class("traffic-minimize");
-    let dot_zoom = GtkBox::new(Orientation::Horizontal, 0);
-    dot_zoom.add_css_class("traffic-light");
-    dot_zoom.add_css_class("traffic-zoom");
-    traffic_lights.append(&dot_close);
-    traffic_lights.append(&dot_min);
-    traffic_lights.append(&dot_zoom);
-    titlebar.append(&traffic_lights);
 
     let title_space = GtkBox::new(Orientation::Horizontal, 0);
     title_space.set_hexpand(true);
@@ -352,7 +338,7 @@ fn create_welcome_step() -> (GtkBox, Button) {
     container.add_css_class("mac-body");
     container.set_valign(gtk4::Align::Center);
 
-    let logo = create_logo_widget(104);
+    let logo = create_logo_widget(96);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -367,7 +353,7 @@ fn create_welcome_step() -> (GtkBox, Button) {
         .halign(gtk4::Align::Center)
         .justify(gtk4::Justification::Center)
         .wrap(true)
-        .max_width_chars(54)
+        .max_width_chars(52)
         .build();
 
     let footer = GtkBox::new(Orientation::Horizontal, 12);
@@ -388,12 +374,12 @@ fn create_welcome_step() -> (GtkBox, Button) {
     (container, continue_btn)
 }
 
-// 2. Software License Agreement (Classic macOS installer step)
+// 2. Software License Agreement
 fn create_license_step() -> (GtkBox, Button, Button) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(64);
+    let logo = create_logo_widget(56);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -411,7 +397,7 @@ fn create_license_step() -> (GtkBox, Button, Button) {
     let scroller = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
         .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .min_content_height(160)
+        .min_content_height(140)
         .css_classes(["mac-dialog-card"])
         .build();
 
@@ -447,14 +433,14 @@ fn create_license_step() -> (GtkBox, Button, Button) {
     (container, back_btn, agree_btn)
 }
 
-// 3. Disk Target Selection (macOS disk icon cards)
+// 3. Disk Target Selection
 fn create_disk_selection_step(
     state: Rc<RefCell<AppState>>,
 ) -> (GtkBox, Button, Button, Rc<RefCell<usize>>) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(64);
+    let logo = create_logo_widget(56);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -470,7 +456,7 @@ fn create_disk_selection_step(
         .build();
 
     let scroller = ScrolledWindow::builder()
-        .min_content_height(150)
+        .min_content_height(140)
         .hscrollbar_policy(gtk4::PolicyType::Never)
         .vscrollbar_policy(gtk4::PolicyType::Automatic)
         .css_classes(["disk-selector-scroll"])
@@ -486,7 +472,7 @@ fn create_disk_selection_step(
         let row = GtkBox::new(Orientation::Horizontal, 14);
         row.add_css_class("mac-disk-item");
         row.add_css_class("mac-disk-item-selected");
-        let icon = create_disk_icon(36);
+        let icon = create_disk_icon(32);
         let info = GtkBox::new(Orientation::Vertical, 2);
         let name = Label::builder().label("Virtual Drive (/dev/sda)").css_classes(["disk-title"]).xalign(0.0).build();
         let sub = Label::builder().label("64.0 GiB — Available for Mock Installation").css_classes(["disk-sub"]).xalign(0.0).build();
@@ -502,7 +488,7 @@ fn create_disk_selection_step(
             if i == 0 {
                 row.add_css_class("mac-disk-item-selected");
             }
-            let icon = create_disk_icon(36);
+            let icon = create_disk_icon(32);
             let info = GtkBox::new(Orientation::Vertical, 2);
             let name = Label::builder()
                 .label(&format!("{} ({})", dev.model, dev.path))
@@ -524,7 +510,6 @@ fn create_disk_selection_step(
         }
     }
 
-    // Connect click handlers to select disk cards
     let cards_rc = Rc::new(card_widgets);
     for (i, card_w) in cards_rc.iter().enumerate() {
         let gesture = GestureClick::new();
@@ -573,7 +558,7 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(64);
+    let logo = create_logo_widget(56);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -588,7 +573,7 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
         .halign(gtk4::Align::Center)
         .build();
 
-    let card = GtkBox::new(Orientation::Vertical, 10);
+    let card = GtkBox::new(Orientation::Vertical, 8);
     card.add_css_class("mac-dialog-card");
 
     let host_lbl = Label::builder().label("Computer Name:").css_classes(["mac-input-label"]).xalign(0.0).build();
@@ -631,13 +616,13 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
     (container, back_btn, install_btn, host_entry, user_entry, pass_entry)
 }
 
-// 5. macOS Authentic Progress Step (Centered progress bar with status text underneath)
+// 5. Progress Step
 fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
     container.set_valign(gtk4::Align::Center);
 
-    let logo = create_logo_widget(96);
+    let logo = create_logo_widget(88);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -662,8 +647,8 @@ fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
     let scroller = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Automatic)
         .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .min_content_height(140)
-        .margin_top(16)
+        .min_content_height(130)
+        .margin_top(14)
         .css_classes(["mac-log-view"])
         .build();
 
