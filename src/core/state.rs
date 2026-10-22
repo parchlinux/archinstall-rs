@@ -752,6 +752,9 @@ impl AppState {
                     return;
                 }
 
+                if line.contains("Installation completed.") || line.contains("Dry-run completed.") {
+                    self.install_completed = true;
+                }
                 self.install_log.push(line);
                 // No log line limit: allow install_log to grow as needed
                 self.refresh_install_info_popup_body();

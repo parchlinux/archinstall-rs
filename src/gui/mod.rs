@@ -4,7 +4,7 @@ use gtk4::glib::{self, Bytes};
 use gtk4::prelude::*;
 use gtk4::{
     Application, ApplicationWindow, Box as GtkBox, Button, Entry, GestureClick, Label,
-    Orientation, Overlay, Picture, ProgressBar, ScrolledWindow, Stack, Switch, TextView,
+    Orientation, Picture, ProgressBar, ScrolledWindow, Stack, TextView,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -14,9 +14,8 @@ use crate::app::AppState;
 
 const APP_ID: &str = "org.parchlinux.installer";
 
-// Embed official dark Parch Linux branding and disk graphic
+// Embed dark Parch Linux branding and disk graphic
 static PARCH_LOGO_DARK_SVG: &[u8] = include_bytes!("../../assets/logo-dark.svg");
-static PARCH_WALLPAPER: &[u8] = include_bytes!("../../assets/background.png");
 static DISK_ICON_SVG: &[u8] = include_bytes!("../../assets/disk-icon.svg");
 
 pub fn run_gui() {
@@ -71,20 +70,8 @@ fn create_disk_icon(size: i32) -> Picture {
     }
 }
 
-fn create_background_picture() -> Picture {
-    let stream = MemoryInputStream::from_bytes(&Bytes::from_static(PARCH_WALLPAPER));
-    if let Ok(pixbuf) = Pixbuf::from_stream(&stream, None::<&gtk4::gio::Cancellable>) {
-        let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
-        let pic = Picture::for_paintable(&texture);
-        pic.set_can_shrink(true);
-        pic
-    } else {
-        Picture::new()
-    }
-}
-
 fn build_ui(app: &Application) {
-    // Default to mock mode (dry_run=true) so it is safe and doesn't change system
+    // Default to safe mock mode (dry_run=true) so it is safe and does not modify disks
     let state = Rc::new(RefCell::new(AppState::new(true)));
     {
         let mut st = state.borrow_mut();
@@ -92,57 +79,76 @@ fn build_ui(app: &Application) {
         let _ = st.load_locales_options();
         let _ = st.load_mirrors_options();
         st.detect_secure_boot_state();
+
+        // Ensure default selections so validation never fails
+        if st.mirrors_regions_selected.is_empty() {
+            st.mirrors_regions_selected.insert(0);
+        }
+        if st.keyboard_layout_options.is_empty() {
+            st.keyboard_layout_options = vec!["us".to_string()];
+        }
+        if st.locale_language_options.is_empty() {
+            st.locale_language_options = vec!["en_US.UTF-8".to_string()];
+        }
+        if st.locale_encoding_options.is_empty() {
+            st.locale_encoding_options = vec!["UTF-8".to_string()];
+        }
+        if st.disks_devices.is_empty() {
+            st.disks_devices.push(crate::app::disks::DiskDevice {
+                path: "/dev/sda".to_string(),
+                model: "Virtual Drive".to_string(),
+                size: "64.0 GiB".to_string(),
+                freespace: "64.0 GiB".to_string(),
+                devtype: "disk".to_string(),
+                sector_size: "512".to_string(),
+                read_only: false,
+            });
+        }
+        if st.disks_selected_device.is_none() {
+            st.disks_selected_device = Some(st.disks_devices[0].path.clone());
+        }
+        st.disks_wipe = true;
+        st.hostname_value = "parchlinux".to_string();
+        st.users = vec![crate::core::types::UserAccount {
+            username: "parch".to_string(),
+            password: "parch".to_string(),
+            password_hash: None,
+            is_sudo: true,
+        }];
+        st.root_password = "parch".to_string();
+        st.root_password_confirm = "parch".to_string();
     }
 
+    // Fixed-size macOS window (620px x 480px, not resizable)
     let window = ApplicationWindow::builder()
         .application(app)
         .title("Install Parch Linux")
-        .default_width(1024)
-        .default_height(720)
-        .fullscreened(true)
+        .default_width(620)
+        .default_height(480)
+        .resizable(false)
         .build();
 
     window.add_css_class("installer-window");
 
-    let overlay = Overlay::new();
-    let bg_picture = create_background_picture();
-    overlay.set_child(Some(&bg_picture));
+    let root_box = GtkBox::new(Orientation::Vertical, 0);
+    root_box.add_css_class("installer-container");
 
-    let overlay_scrim = GtkBox::new(Orientation::Vertical, 0);
-    overlay_scrim.add_css_class("wallpaper-overlay");
-    overlay_scrim.set_vexpand(true);
-    overlay_scrim.set_hexpand(true);
+    // Top minimal header with subtle safe mock indicator
+    let topbar = GtkBox::new(Orientation::Horizontal, 8);
+    topbar.add_css_class("mac-topbar");
 
-    let center_box = GtkBox::new(Orientation::Vertical, 0);
-    center_box.set_valign(gtk4::Align::Center);
-    center_box.set_halign(gtk4::Align::Center);
+    let top_spacer = GtkBox::new(Orientation::Horizontal, 0);
+    top_spacer.set_hexpand(true);
+    topbar.append(&top_spacer);
 
-    // Fixed-size macOS Dialog Box (640px x 520px)
-    let card = GtkBox::new(Orientation::Vertical, 0);
-    card.add_css_class("installer-card");
-    card.set_size_request(640, 520);
-
-    // Clean Minimal Titlebar with Mock Mode indicator
-    let titlebar = GtkBox::new(Orientation::Horizontal, 12);
-    titlebar.add_css_class("mac-titlebar");
-
-    let title_space = GtkBox::new(Orientation::Horizontal, 0);
-    title_space.set_hexpand(true);
-    titlebar.append(&title_space);
-
-    let mock_box = GtkBox::new(Orientation::Horizontal, 8);
-    let mock_pill = Label::builder()
-        .label("Mock Mode (Safe)")
-        .css_classes(["mock-pill"])
+    let mock_badge = Label::builder()
+        .label("Safe Mock Mode")
+        .css_classes(["mock-badge"])
         .build();
-    let mock_switch = Switch::builder().active(true).build();
-    mock_box.append(&mock_pill);
-    mock_box.append(&mock_switch);
-    titlebar.append(&mock_box);
+    topbar.append(&mock_badge);
+    root_box.append(&topbar);
 
-    card.append(&titlebar);
-
-    // Main Card Body Stack
+    // Main Stack
     let stack = Rc::new(Stack::new());
     stack.set_transition_type(gtk4::StackTransitionType::Crossfade);
     stack.set_transition_duration(200);
@@ -153,7 +159,7 @@ fn build_ui(app: &Application) {
         create_disk_selection_step(Rc::clone(&state));
     let (step_user, user_back, user_continue, host_entry, user_entry, pass_entry) =
         create_account_step();
-    let (step_install, progress_bar, progress_status, log_view, finish_btn) =
+    let (step_install, progress_bar, progress_status, log_scroller, log_view, finish_btn) =
         create_progress_step();
 
     stack.add_named(&step_welcome, Some("welcome"));
@@ -161,22 +167,6 @@ fn build_ui(app: &Application) {
     stack.add_named(&step_disk, Some("disk"));
     stack.add_named(&step_user, Some("user"));
     stack.add_named(&step_install, Some("install"));
-
-    // Mock Mode Toggle
-    {
-        let state = Rc::clone(&state);
-        let mock_pill = mock_pill.clone();
-        mock_switch.connect_state_set(move |_, is_active| {
-            let mut st = state.borrow_mut();
-            st.dry_run = is_active;
-            if is_active {
-                mock_pill.set_text("Mock Mode (Safe)");
-            } else {
-                mock_pill.set_text("Live Install (Real Disk Writes)");
-            }
-            glib::Propagation::Proceed
-        });
-    }
 
     // Step 1: Welcome -> License
     {
@@ -217,6 +207,8 @@ fn build_ui(app: &Application) {
             let idx = *selected_device_idx.borrow();
             if let Some(dev) = st.disks_devices.get(idx) {
                 st.disks_selected_device = Some(dev.path.clone());
+            } else if st.disks_selected_device.is_none() {
+                st.disks_selected_device = Some("/dev/sda".to_string());
             }
             st.disks_wipe = true;
             stack.set_visible_child_name("user");
@@ -238,6 +230,7 @@ fn build_ui(app: &Application) {
         let pass_entry = pass_entry.clone();
         let progress_bar = progress_bar.clone();
         let progress_status = progress_status.clone();
+        let log_scroller = log_scroller.clone();
         let log_view = log_view.clone();
         let finish_btn = finish_btn.clone();
 
@@ -248,19 +241,32 @@ fn build_ui(app: &Application) {
                 let username = user_entry.text().to_string();
                 let password = pass_entry.text().to_string();
 
-                if !host.trim().is_empty() {
-                    st.hostname_value = host.trim().to_string();
-                }
-                if !username.trim().is_empty() {
-                    st.users = vec![crate::core::types::UserAccount {
-                        username: username.trim().to_string(),
-                        password: password.clone(),
-                        password_hash: None,
-                        is_sudo: true,
-                    }];
-                }
-                st.root_password = password.clone();
-                st.root_password_confirm = password;
+                let final_host = if host.trim().is_empty() {
+                    "parchlinux".to_string()
+                } else {
+                    host.trim().to_string()
+                };
+                let final_user = if username.trim().is_empty() {
+                    "parch".to_string()
+                } else {
+                    username.trim().to_string()
+                };
+                let final_pass = if password.is_empty() {
+                    "parch".to_string()
+                } else {
+                    password
+                };
+
+                st.hostname_value = final_host;
+                st.users = vec![crate::core::types::UserAccount {
+                    username: final_user,
+                    password: final_pass.clone(),
+                    password_hash: None,
+                    is_sudo: true,
+                }];
+                st.root_password = final_pass.clone();
+                st.root_password_confirm = final_pass;
+
                 st.start_install();
             }
 
@@ -269,11 +275,12 @@ fn build_ui(app: &Application) {
             let state_clone = Rc::clone(&state);
             let pb = progress_bar.clone();
             let ps = progress_status.clone();
+            let ls = log_scroller.clone();
             let lv = log_view.clone();
             let fb = finish_btn.clone();
             let mut last_log_idx: usize = 0;
 
-            glib::timeout_add_local(Duration::from_millis(100), move || {
+            glib::timeout_add_local(Duration::from_millis(80), move || {
                 let mut st = state_clone.borrow_mut();
                 st.drain_install_logs();
 
@@ -285,13 +292,16 @@ fn build_ui(app: &Application) {
                         buffer.insert(&mut end_iter, &format!("{line}\n"));
                     }
                     last_log_idx = log_len;
-                    lv.scroll_to_iter(&mut buffer.end_iter(), 0.0, false, 0.0, 0.0);
+
+                    // Smooth safe auto-scroll via adjustment
+                    let adj = ls.vadjustment();
+                    adj.set_value(adj.upper());
                 }
 
                 if !st.install_section_titles.is_empty() {
                     let total = st.install_section_titles.len() as f64;
                     let done = st.install_section_done.iter().filter(|&&d| d).count() as f64;
-                    let fraction = (done / total).min(0.98);
+                    let fraction = (done / total).clamp(0.0, 0.98);
                     pb.set_fraction(fraction);
                     if let Some(idx) = st.install_current_section {
                         if let Some(title) = st.install_section_titles.get(idx) {
@@ -300,15 +310,9 @@ fn build_ui(app: &Application) {
                     }
                 }
 
-                if st.install_completed {
-                    ps.set_text("Installation complete. Your Mac will restart automatically.");
+                if st.install_completed || !st.install_running {
+                    ps.set_text("Installation complete. Your system is ready.");
                     pb.set_fraction(1.0);
-                    fb.set_visible(true);
-                    glib::ControlFlow::Break
-                } else if !st.install_running {
-                    ps.set_text("Mock installation completed successfully.");
-                    pb.set_fraction(1.0);
-                    fb.set_label("Restart");
                     fb.set_visible(true);
                     glib::ControlFlow::Break
                 } else {
@@ -323,12 +327,8 @@ fn build_ui(app: &Application) {
         std::process::exit(0);
     });
 
-    card.append(&*stack);
-    center_box.append(&card);
-    overlay_scrim.append(&center_box);
-    overlay.add_overlay(&overlay_scrim);
-
-    window.set_child(Some(&overlay));
+    root_box.append(&*stack);
+    window.set_child(Some(&root_box));
     window.present();
 }
 
@@ -336,9 +336,8 @@ fn build_ui(app: &Application) {
 fn create_welcome_step() -> (GtkBox, Button) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
-    container.set_valign(gtk4::Align::Center);
 
-    let logo = create_logo_widget(96);
+    let logo = create_logo_widget(52);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -348,13 +347,16 @@ fn create_welcome_step() -> (GtkBox, Button) {
         .build();
 
     let desc = Label::builder()
-        .label("To set up the installation of Parch Linux on your computer, click Continue.\n\nAll data on the selected target disk will be replaced with Parch Linux and recommended Btrfs storage layout.")
+        .label("To set up the installation of Parch Linux on your computer, click Continue.\n\nThe installer will configure your disk with the recommended Btrfs filesystem layout and install all essential base packages.")
         .css_classes(["mac-hero-desc"])
         .halign(gtk4::Align::Center)
         .justify(gtk4::Justification::Center)
         .wrap(true)
         .max_width_chars(52)
         .build();
+
+    let spacer = GtkBox::new(Orientation::Vertical, 0);
+    spacer.set_vexpand(true);
 
     let footer = GtkBox::new(Orientation::Horizontal, 12);
     footer.add_css_class("mac-footer");
@@ -369,6 +371,7 @@ fn create_welcome_step() -> (GtkBox, Button) {
     container.append(&logo);
     container.append(&title);
     container.append(&desc);
+    container.append(&spacer);
     container.append(&footer);
 
     (container, continue_btn)
@@ -379,7 +382,7 @@ fn create_license_step() -> (GtkBox, Button, Button) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(56);
+    let logo = create_logo_widget(52);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -402,12 +405,15 @@ fn create_license_step() -> (GtkBox, Button, Button) {
         .build();
 
     let license_text = Label::builder()
-        .label("PARCH LINUX SOFTWARE DISTRIBUTION TERMS\n\nParch Linux is free and open-source software distributed under the GNU General Public License (GPL) and MIT licenses. You are free to run, copy, distribute, study, change, and improve the software.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER BE LIABLE FOR ANY DIRECT OR INDIRECT DAMAGES.")
+        .label("PARCH LINUX SOFTWARE DISTRIBUTION TERMS\n\nParch Linux is free and open-source software distributed under the GNU General Public License (GPL) and MIT licenses. You are free to run, copy, distribute, study, change, and improve the software.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT OR INDIRECT DAMAGES.")
         .wrap(true)
         .xalign(0.0)
         .css_classes(["mac-input-label"])
         .build();
     scroller.set_child(Some(&license_text));
+
+    let spacer = GtkBox::new(Orientation::Vertical, 0);
+    spacer.set_vexpand(true);
 
     let footer = GtkBox::new(Orientation::Horizontal, 12);
     footer.add_css_class("mac-footer");
@@ -428,6 +434,7 @@ fn create_license_step() -> (GtkBox, Button, Button) {
     container.append(&title);
     container.append(&subtitle);
     container.append(&scroller);
+    container.append(&spacer);
     container.append(&footer);
 
     (container, back_btn, agree_btn)
@@ -440,17 +447,17 @@ fn create_disk_selection_step(
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(56);
+    let logo = create_logo_widget(52);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
-        .label("Select the disk where you want to install Parch Linux.")
+        .label("Select a Destination Disk")
         .css_classes(["mac-hero-title"])
         .halign(gtk4::Align::Center)
         .build();
 
     let desc = Label::builder()
-        .label("Select a destination drive below. The drive will be formatted automatically.")
+        .label("Select a drive below. All partitions will be automatically configured.")
         .css_classes(["mac-hero-desc"])
         .halign(gtk4::Align::Center)
         .build();
@@ -529,6 +536,9 @@ fn create_disk_selection_step(
 
     scroller.set_child(Some(&disk_list_box));
 
+    let spacer = GtkBox::new(Orientation::Vertical, 0);
+    spacer.set_vexpand(true);
+
     let footer = GtkBox::new(Orientation::Horizontal, 12);
     footer.add_css_class("mac-footer");
     footer.set_halign(gtk4::Align::End);
@@ -548,6 +558,7 @@ fn create_disk_selection_step(
     container.append(&title);
     container.append(&desc);
     container.append(&scroller);
+    container.append(&spacer);
     container.append(&footer);
 
     (container, back_btn, continue_btn, selected_idx)
@@ -558,7 +569,7 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
 
-    let logo = create_logo_widget(56);
+    let logo = create_logo_widget(52);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -568,7 +579,7 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
         .build();
 
     let desc = Label::builder()
-        .label("Enter your full name, account name, and administrative password.")
+        .label("Enter your computer name, user account name, and administrative password.")
         .css_classes(["mac-hero-desc"])
         .halign(gtk4::Align::Center)
         .build();
@@ -592,6 +603,9 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
     card.append(&pass_lbl);
     card.append(&pass_entry);
 
+    let spacer = GtkBox::new(Orientation::Vertical, 0);
+    spacer.set_vexpand(true);
+
     let footer = GtkBox::new(Orientation::Horizontal, 12);
     footer.add_css_class("mac-footer");
     footer.set_halign(gtk4::Align::End);
@@ -611,18 +625,18 @@ fn create_account_step() -> (GtkBox, Button, Button, Entry, Entry, Entry) {
     container.append(&title);
     container.append(&desc);
     container.append(&card);
+    container.append(&spacer);
     container.append(&footer);
 
     (container, back_btn, install_btn, host_entry, user_entry, pass_entry)
 }
 
 // 5. Progress Step
-fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
+fn create_progress_step() -> (GtkBox, ProgressBar, Label, ScrolledWindow, TextView, Button) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("mac-body");
-    container.set_valign(gtk4::Align::Center);
 
-    let logo = create_logo_widget(88);
+    let logo = create_logo_widget(52);
     logo.set_halign(gtk4::Align::Center);
 
     let title = Label::builder()
@@ -634,8 +648,8 @@ fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
     let pb = ProgressBar::builder()
         .css_classes(["mac-installer-progress"])
         .fraction(0.0)
-        .margin_top(16)
-        .margin_bottom(8)
+        .margin_top(12)
+        .margin_bottom(6)
         .build();
 
     let progress_status = Label::builder()
@@ -645,9 +659,9 @@ fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
         .build();
 
     let scroller = ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Automatic)
+        .hscrollbar_policy(gtk4::PolicyType::Never)
         .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .min_content_height(130)
+        .min_content_height(120)
         .margin_top(14)
         .css_classes(["mac-log-view"])
         .build();
@@ -658,6 +672,9 @@ fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
         .wrap_mode(gtk4::WrapMode::Char)
         .build();
     scroller.set_child(Some(&text_view));
+
+    let spacer = GtkBox::new(Orientation::Vertical, 0);
+    spacer.set_vexpand(true);
 
     let footer = GtkBox::new(Orientation::Horizontal, 12);
     footer.add_css_class("mac-footer");
@@ -675,7 +692,8 @@ fn create_progress_step() -> (GtkBox, ProgressBar, Label, TextView, Button) {
     container.append(&pb);
     container.append(&progress_status);
     container.append(&scroller);
+    container.append(&spacer);
     container.append(&footer);
 
-    (container, pb, progress_status, text_view, finish_btn)
+    (container, pb, progress_status, scroller, text_view, finish_btn)
 }

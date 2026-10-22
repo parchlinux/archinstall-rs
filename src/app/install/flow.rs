@@ -109,9 +109,7 @@ impl AppState {
             let log_path_buf = if let Ok(custom) = std::env::var("ARCHINSTALL_DRY_RUN_LOG") {
                 std::path::PathBuf::from(custom)
             } else {
-                std::env::current_dir()
-                    .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                    .join("dry-run.log")
+                std::path::PathBuf::from("/tmp/archinstall-dry-run.log")
             };
             if let Some(parent) = log_path_buf.parent() {
                 let _ = std::fs::create_dir_all(parent);
@@ -452,7 +450,7 @@ impl AppState {
             "select_target_and_run_prechecks: target='{target}'"
         ));
 
-        if self.disk_has_mounted_partitions(&target) {
+        if !self.dry_run && self.disk_has_mounted_partitions(&target) {
             self.debug_log(&format!(
                 "select_target_and_run_prechecks: mounted partitions detected on {target}"
             ));
@@ -462,7 +460,7 @@ impl AppState {
             return None;
         }
 
-        if !self.disks_wipe && self.disk_freespace_low(&target) {
+        if !self.dry_run && !self.disks_wipe && self.disk_freespace_low(&target) {
             self.debug_log(
                 "select_target_and_run_prechecks: low free space and wipe disabled -> opening WipeConfirm",
             );
