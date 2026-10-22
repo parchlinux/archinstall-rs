@@ -1,157 +1,242 @@
-/* macOS Big Sur / Monterey installer style sheet with Parch Linux theme */
+/* macOS Sequoia / Sonoma Inspired Dark Theme */
 
 window.installer-window {
-    background-color: #0b0e14;
-    color: #f5f5f7;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Cantarell, Ubuntu, sans-serif;
+    background-color: #0d0f14;
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Cantarell, sans-serif;
 }
 
-/* Background image overlay container */
+/* Wallpaper Scrim Overlay */
 .wallpaper-overlay {
-    background: radial-gradient(circle at 50% 40%, rgba(13, 20, 32, 0.72) 0%, rgba(6, 9, 14, 0.94) 100%);
+    background: radial-gradient(circle at 50% 30%, rgba(18, 22, 31, 0.75) 0%, rgba(10, 12, 18, 0.96) 100%);
 }
 
-/* Centered Mac OS Installation Card */
+/* Centered macOS Window Container */
 .installer-card {
-    background-color: rgba(22, 28, 38, 0.88);
+    background-color: rgba(28, 33, 44, 0.94);
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 24px;
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7), 0 2px 12px rgba(0, 0, 0, 0.4);
-    padding: 40px 48px;
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.2);
+    overflow: hidden;
 }
 
-/* Header & Logo styling */
-.installer-logo {
-    margin-bottom: 6px;
+/* macOS Titlebar with Traffic Light Dots */
+.mac-titlebar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 18px;
 }
 
-.installer-hero-title {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.6px;
-    color: #ffffff;
-    margin-bottom: 6px;
+.traffic-light {
+    border-radius: 50%;
+    min-width: 12px;
+    min-height: 12px;
 }
 
-.installer-hero-subtitle {
-    font-size: 15px;
-    font-weight: 400;
+.traffic-close {
+    background-color: #ff5f57;
+    border: 1px solid #e0443e;
+}
+
+.traffic-minimize {
+    background-color: #febc2e;
+    border: 1px solid #d89e24;
+}
+
+.traffic-zoom {
+    background-color: #28c840;
+    border: 1px solid #1aab29;
+}
+
+.mac-titlebar-title {
+    font-size: 13px;
+    font-weight: 600;
     color: #98a2b3;
+    letter-spacing: -0.2px;
+}
+
+/* Mock / Dry-Run Badge in Titlebar */
+.mock-badge {
+    background-color: rgba(254, 188, 46, 0.16);
+    color: #febc2e;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(254, 188, 46, 0.35);
+    letter-spacing: 0.4px;
+}
+
+/* macOS Sidebar */
+.mac-sidebar {
+    background-color: rgba(20, 24, 33, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 24px 16px;
+}
+
+.sidebar-logo {
+    margin-bottom: 16px;
+}
+
+.sidebar-brand-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+}
+
+.sidebar-brand-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: #7d8590;
+    margin-bottom: 24px;
+}
+
+.sidebar-step-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8b949e;
+    transition: all 150ms ease;
+}
+
+.sidebar-step-active {
+    background-color: rgba(163, 0, 178, 0.22);
+    color: #ffffff;
+    font-weight: 600;
+    border-left: 3px solid #b000cc;
+}
+
+.sidebar-step-done {
+    color: #38ef7d;
+}
+
+/* Main Content Area */
+.mac-content-view {
+    padding: 32px 40px;
+}
+
+.content-hero-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.content-hero-subtitle {
+    font-size: 14px;
+    color: #8b949e;
     margin-bottom: 20px;
 }
 
-.section-header {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.9px;
-    color: #00ea88;
-    margin-bottom: 10px;
-}
-
-/* Preference Groups & Cards */
-.group-box {
-    background-color: rgba(255, 255, 255, 0.04);
+/* Glass Grouped Rows / Settings Cards */
+.mac-group {
+    background-color: rgba(255, 255, 255, 0.035);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 14px;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
 }
 
-.badge-tag {
-    background-color: rgba(0, 234, 136, 0.12);
-    color: #00ea88;
-    font-size: 12px;
+.mac-field-label {
+    font-size: 13px;
     font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(0, 234, 136, 0.25);
+    color: #c9d1d9;
+    margin-bottom: 4px;
 }
 
-/* macOS Buttons */
+.mac-field-desc {
+    font-size: 12px;
+    color: #7d8590;
+    margin-bottom: 8px;
+}
+
+/* macOS Native-Style Buttons */
 button.mac-btn-primary {
-    background: linear-gradient(180deg, #0080ff 0%, #0066d6 100%);
-    border: 1px solid #0056b3;
-    border-radius: 10px;
+    background: linear-gradient(180deg, #8500b2 0%, #68008c 100%);
+    border: 1px solid #9e00d4;
+    border-radius: 8px;
     color: #ffffff;
     font-weight: 600;
-    font-size: 14px;
-    padding: 10px 28px;
-    box-shadow: 0 2px 6px rgba(0, 128, 255, 0.3);
+    font-size: 13px;
+    padding: 8px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 button.mac-btn-primary:hover {
-    background: linear-gradient(180deg, #1a8cff 0%, #0073f0 100%);
+    background: linear-gradient(180deg, #9900cc 0%, #75009e 100%);
 }
 
 button.mac-btn-primary:active {
-    background: #0056b3;
+    background: #5c007a;
 }
 
 button.mac-btn-secondary {
-    background-color: rgba(255, 255, 255, 0.07);
+    background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    color: #f5f5f7;
+    border-radius: 8px;
+    color: #e6edf3;
     font-weight: 500;
-    font-size: 14px;
-    padding: 10px 22px;
+    font-size: 13px;
+    padding: 8px 20px;
 }
 
 button.mac-btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.13);
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 button.mac-btn-danger {
-    background: linear-gradient(180deg, #00ea88 0%, #00b86b 100%);
-    border: 1px solid #009959;
-    border-radius: 10px;
-    color: #0b0e14;
+    background: linear-gradient(180deg, #b000cc 0%, #8500b2 100%);
+    border: 1px solid #c700e6;
+    border-radius: 8px;
+    color: #ffffff;
     font-weight: 700;
-    font-size: 14px;
-    padding: 10px 26px;
-    box-shadow: 0 2px 10px rgba(0, 234, 136, 0.35);
+    font-size: 13px;
+    padding: 9px 26px;
+    box-shadow: 0 2px 10px rgba(176, 0, 204, 0.4);
 }
 
 button.mac-btn-danger:hover {
-    background: linear-gradient(180deg, #1aff96 0%, #00cc77 100%);
+    background: linear-gradient(180deg, #c700e6 0%, #9900cc 100%);
 }
 
 /* Entry Fields */
 entry.mac-entry {
-    background-color: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 9px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
     color: #ffffff;
-    padding: 10px 14px;
-    font-size: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
 }
 
 entry.mac-entry:focus {
-    border-color: #00ea88;
-    box-shadow: 0 0 0 3px rgba(0, 234, 136, 0.25);
+    border-color: #b000cc;
+    box-shadow: 0 0 0 3px rgba(176, 0, 204, 0.25);
 }
 
 /* macOS Progress bar */
 progressbar.mac-progress trough {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    min-height: 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    min-height: 8px;
 }
 
 progressbar.mac-progress progress {
-    background: linear-gradient(90deg, #0080ff 0%, #00ea88 100%);
-    border-radius: 10px;
-    min-height: 12px;
+    background: linear-gradient(90deg, #8500b2 0%, #38ef7d 100%);
+    border-radius: 8px;
+    min-height: 8px;
 }
 
-/* Terminal / Log console */
+/* Console terminal */
 .log-console {
-    background-color: #080a0f;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+    background-color: #05070a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
     font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 12px;
-    color: #38ef7d;
-    padding: 14px;
+    font-size: 11.5px;
+    color: #4cd964;
+    padding: 12px;
 }
