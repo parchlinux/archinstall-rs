@@ -127,7 +127,8 @@ pub struct AppState {
     // Swap Partition state
     pub swap_focus_index: usize, // 0: toggle, 1: Continue
     pub swap_enabled: bool,
-    pub swap_size_gb: u32,
+    pub detected_ram_mib: u64,
+    pub swap_size_mib: u64,
 
     // Unified Kernel Images state
     pub uki_focus_index: usize, // 0: toggle, 1: Continue
@@ -396,6 +397,9 @@ impl AppState {
         let mut list_state = ListState::default();
         list_state.select(Some(0));
 
+        let detected_ram = crate::common::utils::detect_ram_mib();
+        let swap_size = crate::common::utils::compute_swap_size_mib(detected_ram);
+
         let mut s = Self {
             install_completed: false,
             reboot_prompt_open: false,
@@ -500,7 +504,8 @@ impl AppState {
 
             swap_focus_index: 0,
             swap_enabled: true,
-            swap_size_gb: Self::detect_swap_size_gb(),
+            detected_ram_mib: detected_ram,
+            swap_size_mib: swap_size,
 
             uki_focus_index: 0,
             uki_enabled: false,
@@ -921,26 +926,4 @@ impl AppState {
         self.popup_open = true;
     }
 
-    pub fn detect_swap_size_gb() -> u32 {
-        let meminfo = std::fs::read_to_string("/proc/meminfo").unwrap_or_default();
-        let mut total_kb: u64 = 0;
-        for line in meminfo.lines() {
-            if line.starts_with("MemTotal:") {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    total_kb = parts[1].parse().unwrap_or(0);
-                    break;
-                }
-            }
-        }
-        let total_gb = total_kb / 1024 / 1024;
-        let swap_gb = if total_gb <= 8 {
-            total_gb as u32
-        } else {
-            let base: u64 = 8;
-            let additional = (total_gb - base) / 2;
-            (base + additional) as u32
-        };
-        swap_gb.max(2).min(16)
-    }
 }

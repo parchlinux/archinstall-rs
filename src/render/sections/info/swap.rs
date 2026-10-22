@@ -14,18 +14,17 @@ pub(super) fn render(frame: &mut Frame, app: &mut AppState, area: Rect) {
             .add_modifier(Modifier::BOLD),
     ))];
 
-    let detected_ram = AppState::detect_swap_size_gb();
     let swap = if app.swap_enabled {
         "Enabled"
     } else {
         "Disabled"
     };
-    info_lines.push(Line::from(format!("Detected RAM: {} GiB", detected_ram)));
+    info_lines.push(Line::from(format!("Swapon: {swap}")));
+    let ram_gib = app.detected_ram_mib as f64 / 1024.0;
+    let swap_gib = app.swap_size_mib as f64 / 1024.0;
     info_lines.push(Line::from(format!(
-        "Recommended Swap: {} GiB",
-        app.swap_size_gb
+        "Detected RAM: {ram_gib:.1} GiB  |  Planned swap size: {swap_gib:.2} GiB"
     )));
-    info_lines.push(Line::from(format!("Swapon: {}", swap)));
     info_lines.push(Line::from(
         "Swap size is calculated based on your system RAM for optimal performance.",
     ));

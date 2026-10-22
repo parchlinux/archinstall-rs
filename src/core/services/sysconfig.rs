@@ -100,11 +100,6 @@ impl SysConfigService {
             cmds.push("systemctl --root=/mnt enable NetworkManager".into());
         }
 
-        // Enable sshd if sshd server type is selected
-        if state.selected_server_types.contains("sshd") {
-            cmds.push("systemctl --root=/mnt enable sshd".into());
-        }
-
         // Enable cloud-init if Cloud server type is selected
         if state.selected_server_types.contains("Cloud") {
             cmds.push("systemctl --root=/mnt enable cloud-init".into());
@@ -113,6 +108,21 @@ impl SysConfigService {
         // Enable NTP if chosen (avoid timedatectl in chroot)
         if state.ats_enabled {
             cmds.push("systemctl --root=/mnt enable systemd-timesyncd".into());
+        }
+
+        // Enable SSH daemon when the SSH server type is selected
+        // (openssh installs the `sshd.service` unit on Arch).
+        let wants_sshd = state.selected_server_types.contains("sshd");
+        let openssh_in_server_pkgs = state
+            .selected_server_packages
+            .get("sshd")
+            .map_or(false, |set| set.contains("openssh"));
+        let openssh_in_additional_pkgs = state
+            .additional_packages
+            .iter()
+            .any(|p| p.name == "openssh");
+        if wants_sshd && (openssh_in_server_pkgs || openssh_in_additional_pkgs) {
+            cmds.push("systemctl --root=/mnt enable sshd".into());
         }
 
         // Root password (set only if provided and confirmed)
